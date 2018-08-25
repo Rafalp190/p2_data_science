@@ -1,0 +1,318 @@
+---
+title: "Proyecto 2 (personal)"
+author: "Oliver Mazariegos"
+date: "18/8/2018"
+output: 
+  html_document:
+
+    number_sections: true
+
+    toc: true
+
+    fig_width: 8
+
+    fig_height: 6
+
+    theme: cosmo
+
+    highlight: tango
+
+    code_folding: show
+---
+
+# Situación Problemática
+
+No se ha buscado la relación entre habilidades cognitivas, crecimiento y salud de los huesos utilizando los datos del estudio longitudinal de la UVG y los estudios que se han realizado con datos parecidos no han sido bien investigados en países de bajos y medianos ingresos.  (Furlan.....)
+
+# Problema Cientifico
+
+
+## Objetivos
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(knitr)
+opts_knit$set(root.dir = "~/R")
+library(readxl)
+library(dplyr)
+library(Matrix)
+library(data.table)
+```
+
+# Conjunto de datos
+
+## Leyendo Datos
+
+* Subjects: Informacion personal de cada sujeto de prueba.
+* Card1: Informacion fisiológica de los sujetos.
+* Card2: Informacion fisiológica complementaria.
+
+```{r lectura}
+
+subjects = as.data.table(read_xlsx("./data/1-Subjects sex_ID_school_DOB.xlsx"))
+card1 = as.data.table(read_xlsx("./data/4-Card1.xlsx"))
+card2 = as.data.table(read_xlsx("./data/5-Card2.xlsx"))
+
+```
+
+## Union y Limpieza de Datos
+
+Uniremos cada conjunto de datos con la informacion respectiva de cada sujeto de observacion. Para eso las uniremos basandonos en el ID.
+
+### Subject
+
+`Subject` es el conjunto de datos que uniremos con los datos recopilados en `Card1` y `Card2`. La limpieza en este conjunto de datos sera tan simple como volver *Factores* las variables `Sex`, `IdSchool 1` y el `ID` del sujeto de observacion. Por otro lado desecharemos `IdSchool 2` que solo representa un valor booleano donde es `TRUE` si el estudiante cambio de colegio.
+
+```{r subject}
+subSubject = subjects[,c(1:5)]
+subSubject$Sex = as.factor(subSubject$Sex)
+subSubject$`IdSchool 1` = as.factor(subSubject$`IdSchool 1`)
+subSubject$ID = as.factor(subSubject$ID)
+```
+
+### Subject-Card1
+
+Uniremos `Card1` con `Subject` por medio del `ID`. Para poder combinar ambos conjuntos de datos realizaremos lo siguiente en `Card1`:  
+
+* Desecharemos las variables `entering date`, `User`, `RepetitionCard1`.
+* Renombraremos `Id` como `ID`.
+* Convertir a *factor* `ID`.
+* Convertir a *factor* `gradeCard1`.
+* Por ultimo combinamos ambos conjuntos de datos.
+
+
+```{r mergeC1}
+subCard1 = card1[,c(1:7)]
+names(subCard1)[1] = "ID"
+subCard1$ID = as.factor(subCard1$ID)
+subCard1$gradeCard1 = as.factor(subCard1$gradeCard1)
+Card1 = merge(subSubject,subCard1)
+Card1$edad = round(118-Card1$`DOB decimal`,0)
+
+```
+
+### Subject-Card2
+
+Uniremos `Card2` con `Subject` por medio del `ID`. Para poder combinar ambos conjuntos de datos realizaremos lo siguiente en `Card2`:  
+
+* Desecharemos las variables `entering date`, `User`, `Repetition`.
+* Renombraremos `Id` como `ID`.
+* Convertir a *factor* `ID`.
+* Convertir a *factor* `gradeCard2`.
+* Por ultimo combinamos ambos conjuntos de datos.
+
+```{r merge, echo=FALSE}
+subCard2 = card2[,c(1:9)]
+names(subCard2)[1] = "ID"
+subCard2$ID = as.factor(subCard2$ID)
+subCard2$`grade Card 2` = as.factor(subCard2$`grade Card 2`)
+Card2 = merge(subSubject,subCard2)
+Card2$edad = round(118-Card2$`DOB decimal`,0)
+```
+
+# Analisis Exploratorio
+
+
+## Card1
+
+### Descripcion de Variables
+
+En Card1 podemos encontrar las siguientes caracteristicas fisiologicas de los sujetos de observacion.  
+
+* `ID`: Identificador personal para cada persona involucrada en el set de datos.
+* `DOB`: Fecha de nacimiento de la persona.
+* `DOB decimal`: Año de nacimiento de la persona en representacion decimal.
+* `Sex`: Sexo de la persona.
+* `IdScholl 1`: Identificador del colegio al que asistió la persona.
+* `yearCard1`: Año en el que se recopilaron los datos.
+* `gradeCard1`: Grado escolar al que pertenecía la persona.
+* `Height`: Altura de la persona en centimetros.
+* `Weight`: Peso de la persona en kg.
+* `Hand grip`: Fuerza de la mano calculado en kg.
+* `Dental`: 
+
+### Resumen de Variables
+
+```{r summaryC1}
+summary(Card1)
+```
+
+### Cruce de Variables
+
+```{r cormatCard1}
+datos = Card1[,c(3:12)]
+datos$Sex = as.numeric(datos$Sex)
+datos$`IdSchool 1` = as.numeric(datos$`IdSchool 1`)
+datos$gradeCard1 = as.numeric(datos$gradeCard1)
+
+#Obtener matriz de correlacion
+cormat = round(cor(datos,use = "complete.obs"),2)
+#Reordenar matriz de correlacion
+reorder_cormat <- function(cormat){
+# Use correlation between variables as distance
+dd <- as.dist((1-cormat)/2)
+hc <- hclust(dd)
+cormat <-cormat[hc$order, hc$order]
+}
+cormat = reorder_cormat(cormat)
+#Obtener triangulo superior
+get_upper_tri = function(cormat){
+  cormat[lower.tri(cormat)] = NA
+  return(cormat)
+}
+upper_tri = get_upper_tri(cormat)
+#Correlacion como heatmap
+require(reshape2)
+melted_cormat = melt(upper_tri, na.rm = T)
+require(ggplot2)
+ggheatmap = ggplot(data = melted_cormat, aes(x=Var1, y=Var2, fill = value)) + geom_tile(color = "white") + scale_fill_gradient2(low = "blue",high = "red",mid = "white", midpoint = 0, limit = c(-1,1), space = "Lab", name="Correlacion") + theme_minimal() + theme(axis.text.x = element_text(angle = 90, vjust = 1,hjust = 1)) + coord_fixed()
+
+ggheatmap + 
+geom_text(aes(Var2, Var1, label = value), color = "black", size = 4) +
+theme(
+  axis.title.x = element_blank(),
+  axis.title.y = element_blank(),
+  panel.grid.major = element_blank(),
+  panel.border = element_blank(),
+  panel.background = element_blank(),
+  axis.ticks = element_blank(),
+  legend.justification = c(1, 0),
+  legend.position = c(0.6, 0.7),
+  legend.direction = "horizontal")+
+  guides(fill = guide_colorbar(barwidth = 7, barheight = 1,
+                title.position = "top", title.hjust = 0.5))
+
+
+```
+
+### Grafico Exploratorios
+
+
+### Cluster
+
+```{r codoC1}
+
+cluster = datos
+
+set.seed(90)
+wss <- (nrow(cluster[,c()])-1)*sum(apply(cluster[,1:ncol(cluster)],2,var))
+
+for (i in 2:10) 
+  wss[i] <- sum(kmeans(cluster[,1:ncol(cluster)], centers=i)$withinss)
+
+plot(2:
+       10, wss[c(2:10)], type="b", xlab="Number of Cluster",  ylab="Squares Summatory", main = "Diagrama de Codo")
+
+```
+
+```{r clusterC1}
+require("fpc")
+set.seed(90)
+km = kmeans(cluster, 6)
+cluster$grupo<-km$cluster
+
+plotcluster(cluster[,c(1:10)],cluster$grupo)
+```
+
+
+### Análisis de Componentes Principales
+
+
+## Card2
+
+### Descripcion de Variables
+
+
+
+### Resumen de Variables
+
+```{r summaryC2}
+summary(Card2)
+```
+
+### Cruce de Variables
+
+```{r cormatCard2}
+datos2 = Card2[,c(3:14)]
+datos2$Sex = as.numeric(datos2$Sex)
+datos2$`IdSchool 1` = as.numeric(datos2$`IdSchool 1`)
+datos2$`grade Card 2` = as.numeric(datos2$`grade Card 2`)
+
+#Obtener matriz de correlacion
+cormat = round(cor(datos2,use = "complete.obs"),2)
+#Reordenar matriz de correlacion
+reorder_cormat <- function(cormat){
+# Use correlation between variables as distance
+dd <- as.dist((1-cormat)/2)
+hc <- hclust(dd)
+cormat <-cormat[hc$order, hc$order]
+}
+cormat = reorder_cormat(cormat)
+#Obtener triangulo superior
+get_upper_tri = function(cormat){
+  cormat[lower.tri(cormat)] = NA
+  return(cormat)
+}
+upper_tri = get_upper_tri(cormat)
+#Correlacion como heatmap
+require(reshape2)
+melted_cormat = melt(upper_tri, na.rm = T)
+require(ggplot2)
+ggheatmap = ggplot(data = melted_cormat, aes(x=Var1, y=Var2, fill = value)) + geom_tile(color = "white") + scale_fill_gradient2(low = "blue",high = "red",mid = "white", midpoint = 0, limit = c(-1,1), space = "Lab", name="Correlacion") + theme_minimal() + theme(axis.text.x = element_text(angle = 90, vjust = 1,hjust = 1)) + coord_fixed()
+
+ggheatmap + 
+geom_text(aes(Var2, Var1, label = value), color = "black", size = 4) +
+theme(
+  axis.title.x = element_blank(),
+  axis.title.y = element_blank(),
+  panel.grid.major = element_blank(),
+  panel.border = element_blank(),
+  panel.background = element_blank(),
+  axis.ticks = element_blank(),
+  legend.justification = c(1, 0),
+  legend.position = c(0.6, 0.7),
+  legend.direction = "horizontal")+
+  guides(fill = guide_colorbar(barwidth = 7, barheight = 1,
+                title.position = "top", title.hjust = 0.5))
+
+
+
+```
+
+### Grafico Exploratorios
+
+
+### Cluster
+
+```{r codo2}
+
+cluster = datos2
+
+wss <- (nrow(cluster[,c()])-1)*sum(apply(cluster[,1:ncol(cluster)],2,var))
+
+for (i in 2:10) 
+  wss[i] <- sum(kmeans(cluster[,1:ncol(cluster)], centers=i)$withinss)
+
+plot(2:
+       10, wss[c(2:10)], type="b", xlab="Number of Cluster",  ylab="Squares Summatory", main = "Diagrama de Codo")
+
+
+```
+
+```{r cluster2}
+
+set.seed(90)
+km<-kmeans(cluster,7)
+km2 = kmeans(cluster, 6)
+cluster$grupo<-km$cluster
+cluster$grupo2<-km2$cluster
+
+plotcluster(cluster,km$cluster)
+```
+
+### Análisis de Componentes Principales
+
+
+# Conclusiones
+
