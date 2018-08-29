@@ -20,9 +20,9 @@ output:
     code_folding: show
 ---
 
-# Situaci?n Problem?tica
+# Situacion Problematica
 
-No se ha buscado la relaci?n entre habilidades cognitivas, crecimiento y salud de los huesos utilizando los datos del estudio longitudinal de la UVG y los estudios que se han realizado con datos parecidos no han sido bien investigados en pa?ses de bajos y medianos ingresos.  
+No se ha buscado la relacion entre habilidades cognitivas, crecimiento y salud de los huesos utilizando los datos del estudio longitudinal de la UVG y los estudios que se han realizado con datos parecidos no han sido bien investigados en paises de bajos y medianos ingresos.  
 
 Los datos utilizados para este analisis son el producto de un estudio longitudinal diseñado por 
 el Dr. Barry Bogin hace mas de 50 años en conjunto con el Colegio Americano de Guatemala. Ellos
@@ -65,8 +65,8 @@ library(FactoMineR)
 ## Leyendo Datos
 
 * Subjects: Informacion personal de cada sujeto de prueba.
-* Card1: Informacion fisiol?gica de los sujetos.
-* Card2: Informacion fisiol?gica complementaria.
+* Card1: Informacion fisiologica de los sujetos.
+* Card2: Informacion fisiologica complementaria.
 
 ```{r lectura}
 
@@ -89,7 +89,7 @@ c2 <-  as.data.frame(read_xlsx("./data/5-Card2.xlsx"))
 ```
 
 
-Modificar los nombres de columnas y uni?n de bases de datos:  
+Modificar los nombres de columnas y union de bases de datos:  
 
 ```{r merge}
 colnames(mainData)[1] <- "Id"
@@ -166,15 +166,15 @@ En Card1 podemos encontrar las siguientes caracteristicas fisiologicas de los su
 
 * `ID`: Identificador personal para cada persona involucrada en el set de datos.
 * `DOB`: Fecha de nacimiento de la persona.
-* `DOB decimal`: A?o de nacimiento de la persona en representacion decimal.
+* `DOB decimal`: Año de nacimiento de la persona en representacion decimal.
 * `Sex`: Sexo de la persona.
-* `IdScholl 1`: Identificador del colegio al que asisti? la persona.
-* `yearCard1`: A?o en el que se recopilaron los datos.
+* `IdScholl 1`: Identificador del colegio al que asistio la persona.
+* `yearCard1`: Año en el que se recopilaron los datos.
 * `gradeCard1`: Grado escolar al que pertenec?a la persona.
 * `Height`: Altura de la persona en centimetros.
 * `Weight`: Peso de la persona en kg.
 * `Hand grip`: Fuerza de la mano calculado en kg.
-* `Dental`: Dentici?n piezas del sujeto. N?mero de piezas permanentes eruptadas.
+* `Dental`: Denticion piezas del sujeto. Numero de piezas permanentes eruptadas.
 * `Edad`: Edad del sujeto.
 
 ### Resumen de Variables
@@ -240,7 +240,7 @@ Gracias al heatmap de correlaciones. Podemos ver que la mayoria de variables tie
 
 ### Cluster
 
-Como tecnica de exploraci?n, permitiremos que la m?quina corra algoritmos de agrupamiento no supervisados para poder analizar los patrones que la m?quina encontr?. De primero corramos un diagrama de codo del metodo de Ward para definir la cantidad de grupos a realizar.
+Como tecnica de exploracion, permitiremos que la maquina corra algoritmos de agrupamiento no supervisados para poder analizar los patrones que la maquina encontro. De primero corramos un diagrama de codo del metodo de Ward para definir la cantidad de grupos a realizar.
 
 ```{r codoC1}
 library(factoextra)
@@ -266,7 +266,7 @@ plot(2:
 
 ```
 
-Gracias al diagrama de codo, se considera 5 como la cantidad optima de grupos a realizar. Para realizar el clusterin utilizaremos la tecnica de K-medias.
+Gracias al diagrama de codo, se considera 5 como la cantidad optima de grupos a realizar. Para realizar el clustering utilizaremos la tecnica de K-medias.
 
 ```{r clusterC1}
 require("fpc")
@@ -311,10 +311,10 @@ En Card1 podemos encontrar las siguientes caracteristicas fisiologicas de los su
 
 * `ID`: Identificador personal para cada persona involucrada en el set de datos.
 * `DOB`: Fecha de nacimiento de la persona.
-* `DOB decimal`: A?o de nacimiento de la persona en representacion decimal.
+* `DOB decimal`: Año de nacimiento de la persona en representacion decimal.
 * `Sex`: Sexo de la persona.
-* `IdScholl 1`: Identificador del colegio al que asisti? la persona.
-* `yearCard2`: A?o en el que se recopilaron los datos.
+* `IdScholl 1`: Identificador del colegio al que asistio la persona.
+* `yearCard2`: Año en el que se recopilaron los datos.
 * `grade Card 2`: Grado escolar al que pertenec?a la persona.
 * `UAC1`: Circunferencia Tricep 1
 * `UAC2`: Circunferencia Tricep 2
@@ -445,9 +445,9 @@ Podemos ver que el grupo mas diferente es el Grupo 2, mientras que el Grupo 1 y 
 
 ## Graficos Exploratorios
 
-#### Exploraci?n de variables y elminaci?n de outliers
+#### Exploracion de variables y elminacion de outliers
 
-Gr?fica de frecuencia de edades:
+Grafica de frecuencia de edades:
 
 ```{r age_freq, echo=FALSE}
 ggplot(completeData, aes(x = age)) +
@@ -463,7 +463,7 @@ ggplot(completeData, aes(group = age, x = age, y = Height)) +
   labs(x = "Edad", y = "Altura (cm)")
 ```
 
-Las alturas de m?s de 250 cm no tienen sentido. Adem?s, las edades mayores a 22 a?os tienen muy pocos datos. Se decidi? removerlos:
+Las alturas de mas de 250 cm no tienen sentido. Adem?s, las edades mayores a 22 años tienen muy pocos datos. Se decidio removerlos:
 
 
 ```{r rem_outliers}
@@ -481,21 +481,21 @@ ggplot(completeData, aes(group = age, x = age, y = Height)) +
 ```
 
 
-Gr?fica de boxplots de pesos por edades:
+Grafica de boxplots de pesos por edades:
 ```{r boxplot_weight1, echo=FALSE}
 ggplot(completeData, aes(group = age, x = age, y = Weight)) +
   geom_boxplot() +
   labs(x = "Edad", y = "Peso (kg)")
 ```
 
-Pesos mayores a 200 kg no tienen sentidos. Se decidi? eliminarlos:
+Pesos mayores a 200 kg no tienen sentidos. Se decidio eliminarlos:
 
 ```{r }
 completeData <- completeData %>% 
   filter(Weight < 200)
 ```
 
-Gr?fica de boxplots de pesos por edades sin outliers:
+Grafica de boxplots de pesos por edades sin outliers:
 
 ```{r }
 ggplot(completeData, aes(group = age, x = age, y = Weight)) +
@@ -503,7 +503,7 @@ ggplot(completeData, aes(group = age, x = age, y = Weight)) +
   labs(x = "Edad", y = "Peso (kg)")
 ```
 
-Gr?ficas de regresi?n lineal entre peso y altura por edad:
+Graficas de regresion lineal entre peso y altura por edad:
 
 ```{r peso_altura, echo=FALSE}
 for(i in 4:22){
@@ -511,13 +511,13 @@ for(i in 4:22){
     filter(age == i)
   
   print(ggplot(temp, aes(x = Weight, y = Height)) + geom_point() + 
-           labs(x = "Peso (kg)", y = "Altura (cm)", title = paste(i, " a?os")) +
+           labs(x = "Peso (kg)", y = "Altura (cm)", title = paste(i, " años")) +
     geom_smooth(method = lm, se = F))
 }
 
 ```
 
-Solo existen 4 datos para mediciones con cuatro a?os de edad. Se eliminar?n:
+Solo existen 4 datos para mediciones con cuatro años de edad. Se eliminaron:
 
 
 ```{r rem_outliers2}
@@ -525,12 +525,12 @@ completeData <- completeData %>%
   filter(age > 4)
 ```
 
-N?mero de dientes contra altura:
+Numero de dientes contra altura:
 
 ```{r , echo=FALSE}
 ggplot(completeData, aes(group = Dental, x = Dental, y = Height)) +
   geom_boxplot() +
-  labs(x = "N?mero de dientes", y = "Altura (cm)")
+  labs(x = "Numero de dientes", y = "Altura (cm)")
 ```
 
 No tiene sentido que hayan ni?os tan altos sin dientes permanentes "erupcionados". Seg?n la Asociaci?n Dental de Am?rica, se espera que a partir de los 6-7 a?os por lo menos se hayan desarrollado los incisivos centrales. Probablemente esos "0"s signifiquen que no fue registrado el dato. Para comprobar cu?ntos registros de ni?os mayores a?os no tienen dientes permanentes "erupcionados":
@@ -573,7 +573,7 @@ Visualizar los datos de pruebas de fuerza de agarre:
 ```{r hand_grip, echo=FALSE}
 ggplot(completeData, aes(y = `Hand grip`, x = age, group = age)) +
   geom_boxplot() +
-  labs(y = "fuerza de agarre (kg)", x = "Edad (a?os)")
+  labs(y = "fuerza de agarre (kg)", x = "Edad (años)")
 ```
 
 No existen registros de pruebas de fuerza de agarre en los que se superen los 100 kg de fuerza de agarre, por lo que se eliminar?n los outliers y se vuelve a graficar: 
@@ -586,7 +586,7 @@ completeData <- completeData %>%
 ```{r hand_grip2, echo=FALSE}
 ggplot(completeData, aes(y = `Hand grip`, x = age, group = age)) +
   geom_boxplot() +
-  labs(y = "fuerza de agarre (kg)", x = "Edad (a?os)")
+  labs(y = "fuerza de agarre (kg)", x = "Edad (años)")
 ```
 
 Ahora graficar la fuerza de agarre por edad:
@@ -601,7 +601,7 @@ for(i in 5:22){
           geom_bar() + 
            labs(y = "Frecuencia", 
                 x = "fuerza de agarre (kg)", 
-                title = paste(i, " a?os")
+                title = paste(i, " años")
                 )
   )
 }
@@ -610,9 +610,9 @@ for(i in 5:22){
 
 ```
 
-La fuerza de agarre presenta una distribuci?n aparentemente normal desde los 5 hasta los 14 a?os. Sin embargo, a partir de los 15 a?os y sobre todo entre los 17 y 19 a?os, se pueden observar claramente dos distribuciones que se traslapan. Esto indica que en estas edades la diferencia de fuerza de agarre es mucho m?s marcada. Se tendr? esto en cuenta para futuras predicciones.
+La fuerza de agarre presenta una distribucion aparentemente normal desde los 5 hasta los 14 a?os. Sin embargo, a partir de los 15 a?os y sobre todo entre los 17 y 19 años, se pueden observar claramente dos distribuciones que se traslapan. Esto indica que en estas edades la diferencia de fuerza de agarre es mucho mas marcada. Se tendra esto en cuenta para futuras predicciones.
 
-Por otra parte, se eliminar?n otras variables poco ?tiles como *entering date*, *entering data* y *User*. Tambi?n se eliminar?n *DOB* y *DOB decimal* debido a que ya se calcul? la edad en cada registro.
+Por otra parte, se eliminar?n otras variables poco ?tiles como *entering date*, *entering data* y *User*. Tambien se eliminaron *DOB* y *DOB decimal* debido a que ya se calculo la edad en cada registro.
 
 ```{r remove_trash}
 
