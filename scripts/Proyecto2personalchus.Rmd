@@ -132,15 +132,15 @@ completeData <- completeData %>%
   filter(age > 4)
 ```
 
-
-
+Número de dientes contra altura:
 
 ```{r , echo=FALSE}
-ggplot(completeData, aes(x = Dental, y = Height)) + 
-  geom_bar(stat = "identity") +
+ggplot(completeData, aes(group = Dental, x = Dental, y = Height)) +
+  geom_boxplot() +
   labs(x = "Número de dientes", y = "Altura (cm)")
 ```
 
+No tiene sentido que hayan niños tan altos sin dientes permanentes "erupcionados". Según la Asociación Dental de América, se espera que a partir de los 6-7 años por lo menos se hayan desarrollado los incisivos centrales. Probablemente esos "0"s signifiquen que no fue registrado el dato. Para comprobar cuántos registros de niños mayores años no tienen dientes permanentes "erupcionados":
 
 ```{r , echo=FALSE}
 
@@ -157,23 +157,90 @@ ggplot(completeData, aes(x = Dental, y = Height)) +
 ```
 
 
-```{r , echo=FALSE}
+```{r check_teeth_age}
+paste(round((nrow(filter(completeData, age > 7 & Dental == 0)) 
+             / nrow(completeData) * 100),2), "%")
+```
+
+Más del 60% de los datos no tienen ese registro, por lo que no se utilizará esta columna.
+
+```{r remove_Dental}
+completeData <- completeData %>% 
+  mutate(Dental = NULL)
+```
+
+IdSchool2, que indica si se cambiaron de colegio parece tener muchos NAs. Chequear:
+
+```{r check_idschool2}
+paste(round(nrow(filter(completeData, is.na(`IdSchool 2`))) / 
+              nrow(completeData) * 100, 2), "%")
+```
+
+Casi el 100% de los registros no poseen esta información. Se eliminará esta columna. Además, se eliminarán las columnas *Repetition* y *RepetitionCard1* ya que estas proveen poca información acerca de la altura. Es más, los alumnos repitentes podrían distorsionar las predicciones.
+
+```{r remove_idschool2_repetitions}
+colnames(completeData)[6] <- "IdSchool2"
+
+completeData <- completeData %>% 
+  mutate(IdSchool2 = NULL) %>% 
+  mutate(Repetition = NULL) %>% 
+  mutate(RepetitionCard1 = NULL)
 
 ```
 
 
-```{r , echo=FALSE}
+Visualizar los datos de pruebas de fuerza de agarre:
+
+```{r hand_grip, echo=FALSE}
+ggplot(completeData, aes(y = `Hand grip`, x = age, group = age)) +
+  geom_boxplot() +
+  labs(y = "fuerza de agarre (kg)", x = "Edad (años)")
+```
+
+No existen registros de pruebas de fuerza de agarre en los que se superen los 100 kg de fuerza de agarre, por lo que se eliminarán los outliers y se vuelve a graficar: 
+
+```{r remove_handgrip_outliers, echo=FALSE}
+completeData <- completeData %>% 
+  filter(`Hand grip` < 100)
+
+ggplot(completeData, aes(y = `Hand grip`, x = age, group = age)) +
+  geom_boxplot() +
+  labs(y = "fuerza de agarre (kg)", x = "Edad (años)")
+```
+
+Ahora graficar la fuerza de agarre por edad:
+
+```{r plot_handgrip_by_age, echo=FALSE}
+
+for(i in 5:22){
+  temp <- completeData %>% 
+    filter(age == i)
+  
+  print(ggplot(temp, aes(x = `Hand grip`)) + 
+          geom_bar() + 
+           labs(y = "Frecuencia", 
+                x = "fuerza de agarre (kg)", 
+                title = paste(i, " años")
+                )
+  )
+}
+
+
 
 ```
 
+La fuerza de agarre presenta una distribución aparentemente normal desde los 5 hasta los 14 años. Sin embargo, a partir de los 15 años y sobre todo entre los 17 y 19 años, se pueden observar claramente dos distribuciones que se traslapan. Esto indica que en estas edades la diferencia de fuerza de agarre es mucho más marcada. Se tendrá esto en cuenta para futuras predicciones.
 
-
-```{r , echo=FALSE}
-
-```
-
-
+Por otra parte, se eliminarán otras variables poco útiles como *entering date*, *entering data* y *User*. También se eliminarán *DOB* y *DOB decimal* debido a que ya se calculó la edad en cada registro.
 
 ```{r , echo=FALSE}
+
+completeData <- completeData %>% 
+  mutate(`entering date` = NULL) %>% 
+  mutate(`entering data` = NULL) %>% 
+  mutate(User.x = NULL) %>% 
+  mutate(User.y = NULL) %>% 
+  mutate(DOB = NULL) %>% 
+  mutate(`DOB decimal` = NULL)
 
 ```
