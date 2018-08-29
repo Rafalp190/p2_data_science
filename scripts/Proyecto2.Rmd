@@ -23,7 +23,12 @@ output:
 
 # Situación Problemática
 
-No se ha buscado la relación entre habilidades cognitivas, crecimiento y salud de los huesos utilizando los datos del estudio longitudinal de la UVG y los estudios que se han realizado con datos parecidos no han sido bien investigados en países de bajos y medianos ingresos.  (Furlan.....)
+No se ha buscado la relacion entre habilidades cognitivas, crecimiento y salud de los huesos utilizando los datos del estudio longitudinal de la UVG y los estudios que se han realizado con datos parecidos no han sido bien investigados en paises de bajos y medianos ingresos.
+
+Los datos utilizados para este analisis son el producto de un estudio longitudinal diseñado por el Dr. Barry Bogin hace mas de 50 años en conjunto con el Colegio Americano de Guatemala. Ellos se propusieron a colectar datos longitudinalmente de estudiantes de todos los años y darle seguimiento a su crecimiento de forma anual hasta el momento en el que completaban sus estudios de bachillerato.
+El estudio se expandió a 6 colegios más a lo largo de los años y se cuenta con datos de peso, talla, IQ, pruebas de lectura y masa osea para registros comenzando en el año 1953.
+
+Esta base de datos pertenece a la fundación Bill and Melinda Gates, los cuales donaron los fondos necesarios para digitalizarla.
 
 # Problema Cientifico
 
@@ -39,6 +44,10 @@ library(readxl)
 library(dplyr)
 library(Matrix)
 library(data.table)
+library(ggplot2)
+library(rela)
+library(psych)
+library(FactoMineR)
 ```
 
 # Conjunto de datos
@@ -57,11 +66,56 @@ card2 = as.data.table(read_xlsx("./data/5-Card2.xlsx"))
 
 ```
 
+### Variables desechadas
+
+En las tres bases de datos existen registros de control de digitalizacion como.  
+
+* `entering date`: Fecha en la que los datos fueron digitalizados.
+* `User` : Usuario que digitalizó el dato.
+
+Estas variables, por ser solo de control, junto a `Repetition` en `Card1` y `Card2`, que no esta presente en casi todo el conjunto de datos, seran desechadas.
+
+
+
+###  Subject
+
+En Subjects podemos encontrar las siguientes variables personales de cada sujeto de estudio.
+
+* `ID`: Identificador personal para cada persona involucrada en el set de datos.
+* `DOB`: Fecha de nacimiento de la persona.
+* `DOB decimal`: Año de nacimiento de la persona en representacion decimal.
+* `Sex`: Sexo de la persona.
+* `IdSchool 1`: Identificador del colegio al que asistió la persona.
+* `IdSchool 2`: Valor booleano que representa si el sujeto ya no estudia en el colegio representado en `IdSchool 1`
+
+### Card1
+
+En Card1 podemos encontrar las siguientes caracteristicas fisiologicas de los sujetos de observacion.  
+
+* `yearCard1`: Año en el que se recopilaron los datos.
+* `gradeCard1`: Grado escolar al que pertenecía la persona.
+* `Height`: Altura de la persona en centimetros.
+* `Weight`: Peso de la persona en kg.
+* `Hand grip`: Fuerza de la mano calculado en kg.
+* `Dental`: Dentición piezas del sujeto. Número de piezas permanentes eruptadas.
+
+### Card2
+
+En Card2 podemos encontrar las siguientes caracteristicas fisiologicas de los sujetos de observacion.  
+
+* `yearCard2`: Año en el que se recopilaron los datos.
+* `grade Card 2`: Grado escolar al que pertenecía la persona.
+* `UAC1`: Circunferencia Tricep 1
+* `UAC2`: Circunferencia Tricep 2
+* `TST1`: Pliegue Cutáneo Tricep 1
+* `TST2`: Pliegue Cutáneo Tricep 2
+* `SSF1`: Pliegue Cutáneo Subescapular 1
+* `SSF2`: Pliegue Cutáneo Subescapular 2
+
 ## Union y Limpieza de Datos
 
-Uniremos cada conjunto de datos con la informacion respectiva de cada sujeto de observacion. Para eso las uniremos basandonos en el ID.
+Uniremos cada conjunto de datos con la informacion respectiva de cada sujeto de observacion. Para eso las uniremos basandonos en el ID. Crearemos 3 nuevas tablas. La primer tabla contendra a los sujetos (`Subjects`) y ambas tablas de caracteristicas fisiologicas (`Card1` y `Card2`). Esta primer tabla se utilizara para explorar ambos `Cards` como uno solo. En contraste, se realizara una tabla para cada `Card` individualmente, con el proposito de poder realizar un analisis de clustering por separado y analizar como se comportan los `Cards` individualmente. 
 
-### Subject
 
 `Subject` es el conjunto de datos que uniremos con los datos recopilados en `Card1` y `Card2`. La limpieza en este conjunto de datos sera tan simple como volver *Factores* las variables `Sex`, `IdSchool 1` y el `ID` del sujeto de observacion. Por otro lado desecharemos `IdSchool 2` que solo representa un valor booleano donde es `TRUE` si el estudiante cambio de colegio.
 
@@ -71,6 +125,26 @@ subSubject$Sex = as.factor(subSubject$Sex)
 subSubject$`IdSchool 1` = as.factor(subSubject$`IdSchool 1`)
 subSubject$ID = as.factor(subSubject$ID)
 ```
+
+
+### Subject-Card1-Card2
+
+```{r S12}
+mainData = subjects
+c1 = card1
+c2 = card2 
+
+colnames(mainData)[1] <- "Id"
+colnames(c1)[2] <- "date" 
+colnames(c2)[2] <- "date"
+
+cards <- merge(c1, c2, by = c("Id", "date"))
+completeData <- merge(mainData, cards, by = "Id")
+completeData$age <- round(completeData$date - completeData$`DOB decimal`, 0)
+```
+
+
+
 
 ### Subject-Card1
 
@@ -117,6 +191,249 @@ Card2$edad = round(Card2$yearCard2-Card2$`DOB decimal`,0)
 ```
 
 # Analisis Exploratorio
+
+##Card1-Card2
+
+### Exploración de variables y eliminacion de outlier
+
+#### Frecuencia de edades
+
+```{r frecEdad}
+ggplot(completeData, aes(x = age)) +
+  geom_bar() +
+  labs(x = "Edad", y = "Frecuencia")
+```
+
+#### Altura por Edad
+
+```{r alturaEdad}
+ggplot(completeData, aes(group = age, x = age, y = Height)) +
+  geom_boxplot() +
+  labs(x = "Edad", y = "Altura (cm)")
+```
+
+Las alturas de más de 250 cm no tienen sentido. Además, las edades mayores a 22 años tienen muy pocos datos. Se decidió removerlos:
+
+
+```{r alturaEdadRem}
+completeData <- completeData %>% 
+  filter(Height < 250) %>% 
+  filter(age < 23)
+```
+
+##### Sin outliers
+
+```{r boxplot_height2, echo=FALSE}
+ggplot(completeData, aes(group = age, x = age, y = Height)) +
+  geom_boxplot() +
+  labs(x = "Edad", y = "Altura (cm)")
+```
+
+
+
+
+#### Pesos por Edades
+
+```{r boxplot_weight1, echo=FALSE}
+ggplot(completeData, aes(group = age, x = age, y = Weight)) +
+  geom_boxplot() +
+  labs(x = "Edad", y = "Peso (kg)")
+```
+
+
+Pesos mayores a 200 kg no tienen sentidos. Se decidió eliminarlos:
+
+```{r remoutWeight}
+completeData <- completeData %>% 
+  filter(Weight < 200)
+```
+
+##### Sin outliers
+
+```{r boxplot_weight2}
+ggplot(completeData, aes(group = age, x = age, y = Weight)) +
+  geom_boxplot() +
+  labs(x = "Edad", y = "Peso (kg)")
+```
+
+
+
+
+#### Regresion Lineal Peso-Altura
+
+```{r peso_altura, echo=FALSE}
+for(i in 4:22){
+  temp <- completeData %>% 
+    filter(age == i)
+  
+  print(ggplot(temp, aes(x = Weight, y = Height)) + geom_point() + 
+           labs(x = "Peso (kg)", y = "Altura (cm)", title = paste(i, " años")) +
+    geom_smooth(method = lm, se = F))
+}
+
+```
+
+Solo existen 4 datos para mediciones con cuatro años de edad. Se eliminarán:
+
+
+```{r rem_outliers2}
+completeData <- completeData %>% 
+  filter(age > 4)
+```
+
+
+#### Altura-Dientes
+```{r , echo=FALSE}
+ggplot(completeData, aes(group = Dental, x = Dental, y = Height)) +
+  geom_boxplot() +
+  labs(x = "Número de dientes", y = "Altura (cm)")
+```
+
+No tiene sentido que hayan niños tan altos sin dientes permanentes "erupcionados". Según la Asociación Dental de América, se espera que a partir de los 6-7 años por lo menos se hayan desarrollado los incisivos centrales. Probablemente esos "0"s signifiquen que no fue registrado el dato. Para comprobar cuántos registros de niños mayores años no tienen dientes permanentes "erupcionados":
+
+
+```{r check_teeth_age}
+paste(round((nrow(filter(completeData, age > 7 & Dental == 0)) 
+             / nrow(completeData) * 100),2), "%")
+```
+
+Más del 60% de los datos no tienen ese registro, por lo que no se utilizará esta columna.
+
+```{r remove_Dental}
+completeData <- completeData %>% 
+  mutate(Dental = NULL)
+```
+
+
+#### IdSchool | Repetition | RepetitionCard1
+
+IdSchool2, que indica si se cambiaron de colegio parece tener muchos NAs. Chequear:
+
+```{r check_idschool2}
+paste(round(nrow(filter(completeData, is.na(`IdSchool 2`))) / 
+              nrow(completeData) * 100, 2), "%")
+```
+
+Casi el 100% de los registros no poseen esta información. Se eliminará esta columna. Además, se eliminarán las columnas *Repetition* y *RepetitionCard1* ya que estas proveen poca información acerca de la altura. Es más, los alumnos repitentes podrían distorsionar las predicciones.
+
+```{r remove_idschool2_repetitions}
+colnames(completeData)[6] <- "IdSchool2"
+
+completeData <- completeData %>% 
+  mutate(IdSchool2 = NULL) %>% 
+  mutate(Repetition = NULL) %>% 
+  mutate(RepetitionCard1 = NULL)
+
+```
+
+
+
+#### Fuerza de Agarre (Hand grip)
+
+Visualizar los datos de pruebas de fuerza de agarre:
+
+```{r hand_grip, echo=FALSE}
+ggplot(completeData, aes(y = `Hand grip`, x = age, group = age)) +
+  geom_boxplot() +
+  labs(y = "fuerza de agarre (kg)", x = "Edad (años)")
+```
+
+No existen registros de pruebas de fuerza de agarre en los que se superen los 100 kg de fuerza de agarre, por lo que se eliminarán los outliers y se vuelve a graficar: 
+
+```{r remove_handgrip_outliers, echo=FALSE}
+completeData <- completeData %>% 
+  filter(`Hand grip` < 100)
+```
+
+##### Sin outliers
+
+```{r hand_grip2, echo=FALSE}
+ggplot(completeData, aes(y = `Hand grip`, x = age, group = age)) +
+  geom_boxplot() +
+  labs(y = "fuerza de agarre (kg)", x = "Edad (años)")
+```
+
+#### Fuerza de Agarre-Edad
+
+```{r plot_handgrip_by_age, echo=FALSE}
+
+for(i in 5:22){
+  temp <- completeData %>% 
+    filter(age == i)
+  
+  print(ggplot(temp, aes(x = `Hand grip`)) + 
+          geom_bar() + 
+           labs(y = "Frecuencia", 
+                x = "fuerza de agarre (kg)", 
+                title = paste(i, " años")
+                )
+  )
+}
+
+
+
+```
+
+La fuerza de agarre presenta una distribución aparentemente normal desde los 5 hasta los 14 años. Sin embargo, a partir de los 15 años y sobre todo entre los 17 y 19 años, se pueden observar claramente dos distribuciones que se traslapan. Esto indica que en estas edades la diferencia de fuerza de agarre es mucho más marcada. Se tendrá esto en cuenta para futuras predicciones.
+
+
+
+
+
+### Desecho de Variables
+
+Se eliminarán otras variables poco útiles como *entering date*, *entering data* y *User*. También se eliminarán *DOB* y *DOB decimal* debido a que ya se calculó la edad en cada registro.
+
+```{r remove_trash}
+
+completeData <- completeData %>% 
+  mutate(`entering date` = NULL) %>% 
+  mutate(`entering data` = NULL) %>% 
+  mutate(User.x = NULL) %>% 
+  mutate(User.y = NULL) %>% 
+  mutate(DOB = NULL) %>% 
+  mutate(`DOB decimal` = NULL)
+
+```
+### Analisís de Componentes Principales
+
+Se evalurá la factibilidad de realizar un análisis de componentes principales utilizando la base de datos unificada del estudio.
+
+```{r PCA_preview}
+pafDatos<-paf(as.matrix(completeData[,5:16]))
+pafDatos$KMO
+pafDatos$Bartlett
+summary(pafDatos)
+cortest.bartlett(completeData[,5:16])
+```
+
+Como se puede observar se obtuvo un KMO de *0.86* y un coeficiente de Bartlett muy elevado *2421661* por lo que parece que un analisis de componentes principales es una buena idea. Considerando que el valor P indicado es de 0. 
+
+#### Matriz de Correlación
+
+```{r corrmat_pca}
+kable(cor(completeData[,5:16],use = "pairwise.complete.obs"))
+```
+
+En la matriz de correlación observamos que algunas variables se encuentran relacionadas por lo que se procederá a realizar el analisis de componentes principales para intentar reducir el dataset.
+
+```{r pc}
+compPrinc<-prcomp(completeData[,5:16], scale = T)
+compPrinc
+summary(compPrinc)
+
+
+```
+
+```{r pca}
+compPrincPCA<-PCA(completeData[,5:16],ncp=ncol(completeData[,5:16]), scale.unit = T)
+```
+
+
+
+
+
+
 
 ## Card1
 
@@ -265,14 +582,11 @@ En definitiva, los boxplots nos permiten ver como varian las variables dentro de
 Ademas de que los graficos demuestran que las edades son una variable fuerte para decidir la pertenencia a un grupo, tambien demuestra la relacion que tiene con las demas variables. Las demas variables cambian proporcionalmente a la edad, lo que se puede reflejar en la matriz de correlaciones presentada anteriormente.
 
 
-### Análisis de Componentes Principales
-
-
 ## Card2
 
 ### Descripcion de Variables
 
-En Card1 podemos encontrar las siguientes caracteristicas fisiologicas de los sujetos de observacion.  
+En Card2 podemos encontrar las siguientes caracteristicas fisiologicas de los sujetos de observacion.  
 
 * `ID`: Identificador personal para cada persona involucrada en el set de datos.
 * `DOB`: Fecha de nacimiento de la persona.
@@ -410,7 +724,10 @@ Podemos ver que el grupo mas diferente es el Grupo 2, mientras que el Grupo 1 y 
 2. Grupo 1
 3. Grupo 3
 
-### Análisis de Componentes Principales
+
+
+
+
 
 
 # Conclusiones
