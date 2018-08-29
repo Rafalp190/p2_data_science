@@ -142,20 +142,6 @@ ggplot(completeData, aes(group = Dental, x = Dental, y = Height)) +
 
 No tiene sentido que hayan niños tan altos sin dientes permanentes "erupcionados". Según la Asociación Dental de América, se espera que a partir de los 6-7 años por lo menos se hayan desarrollado los incisivos centrales. Probablemente esos "0"s signifiquen que no fue registrado el dato. Para comprobar cuántos registros de niños mayores años no tienen dientes permanentes "erupcionados":
 
-```{r , echo=FALSE}
-
-```
-
-
-```{r , echo=FALSE}
-
-```
-
-
-```{r , echo=FALSE}
-
-```
-
 
 ```{r check_teeth_age}
 paste(round((nrow(filter(completeData, age > 7 & Dental == 0)) 
@@ -202,7 +188,9 @@ No existen registros de pruebas de fuerza de agarre en los que se superen los 10
 ```{r remove_handgrip_outliers, echo=FALSE}
 completeData <- completeData %>% 
   filter(`Hand grip` < 100)
+```
 
+```{r hand_grip2, echo=FALSE}
 ggplot(completeData, aes(y = `Hand grip`, x = age, group = age)) +
   geom_boxplot() +
   labs(y = "fuerza de agarre (kg)", x = "Edad (años)")
