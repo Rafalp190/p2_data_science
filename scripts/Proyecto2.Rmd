@@ -20,9 +20,31 @@ output:
     code_folding: show
 ---
 
-# Situaci√≥n Problem√°tica
+---
+title: "Proyecto 2 (personal)"
+author: "Oliver Mazariegos"
+date: "18/8/2018"
+output: 
+  html_document:
 
-No se ha buscado la relaci√≥n entre habilidades cognitivas, crecimiento y salud de los huesos utilizando los datos del estudio longitudinal de la UVG y los estudios que se han realizado con datos parecidos no han sido bien investigados en pa√≠ses de bajos y medianos ingresos.  (Furlan.....)
+    number_sections: true
+
+    toc: true
+
+    fig_width: 8
+
+    fig_height: 6
+
+    theme: cosmo
+
+    highlight: tango
+
+    code_folding: show
+---
+
+# SituaciÛn Problem·tica
+
+No se ha buscado la relaciÛn entre habilidades cognitivas, crecimiento y salud de los huesos utilizando los datos del estudio longitudinal de la UVG y los estudios que se han realizado con datos parecidos no han sido bien investigados en paÌses de bajos y medianos ingresos.  (Furlan.....)
 
 # Problema Cientifico
 
@@ -45,8 +67,8 @@ library(data.table)
 ## Leyendo Datos
 
 * Subjects: Informacion personal de cada sujeto de prueba.
-* Card1: Informacion fisiol√≥gica de los sujetos.
-* Card2: Informacion fisiol√≥gica complementaria.
+* Card1: Informacion fisiolÛgica de los sujetos.
+* Card2: Informacion fisiolÛgica complementaria.
 
 ```{r lectura}
 
@@ -87,11 +109,42 @@ subCard1 = card1[,c(1:7)]
 names(subCard1)[1] = "ID"
 subCard1$ID = as.factor(subCard1$ID)
 subCard1$gradeCard1 = as.factor(subCard1$gradeCard1)
+
 Card1 = merge(subSubject,subCard1)
-Card1$edad = round(118-Card1$`DOB decimal`,0)
+Card1 = na.omit(Card1)
+
+Card1$`Hand grip` = as.numeric(Card1$`Hand grip`)
+Card1$edad = round(Card1$yearCard1-Card1$`DOB decimal`,0)
 
 ```
 
+```{r desarmarArmarC1}
+edad = 0
+completo = subjects[,c(1:5)]
+completo$ID = as.factor(completo$ID)
+Card1$`Hand grip` = as.numeric(gsub(287, as.numeric(NA), Card1$`Hand grip`) )
+for(i in c(8:17)){
+  edad = Card1[Card1$edad == i, c(1,9:11)]
+  i = as.character(i)
+  names(edad) = c("ID",paste("Weight",i),paste("Hand grip",i),paste("Dental",i))
+  
+  completo = merge(completo, edad, by = "ID", all.x = T)
+}
+
+altura17 = Card1[Card1$edad==17,c(1,8)]
+
+completo = merge(completo, altura17, all.x = T )
+
+completo = as.data.frame(completo)
+
+media = 0
+columna = 7
+for(columna in c(5:36)){
+  mediana = completo[,columna]
+  mediana = median(as.numeric(mediana), na.rm = T)
+  completo[is.na(completo[,columna]),columna]= mediana
+}
+```
 ### Subject-Card2
 
 Uniremos `Card2` con `Subject` por medio del `ID`. Para poder combinar ambos conjuntos de datos realizaremos lo siguiente en `Card2`:  
@@ -108,7 +161,7 @@ names(subCard2)[1] = "ID"
 subCard2$ID = as.factor(subCard2$ID)
 subCard2$`grade Card 2` = as.factor(subCard2$`grade Card 2`)
 Card2 = merge(subSubject,subCard2)
-Card2$edad = round(118-Card2$`DOB decimal`,0)
+Card2$edad = round(Card2$yearCard2-Card2$`DOB decimal`,0)
 ```
 
 # Analisis Exploratorio
@@ -122,11 +175,11 @@ En Card1 podemos encontrar las siguientes caracteristicas fisiologicas de los su
 
 * `ID`: Identificador personal para cada persona involucrada en el set de datos.
 * `DOB`: Fecha de nacimiento de la persona.
-* `DOB decimal`: A√±o de nacimiento de la persona en representacion decimal.
+* `DOB decimal`: AÒo de nacimiento de la persona en representacion decimal.
 * `Sex`: Sexo de la persona.
-* `IdScholl 1`: Identificador del colegio al que asisti√≥ la persona.
-* `yearCard1`: A√±o en el que se recopilaron los datos.
-* `gradeCard1`: Grado escolar al que pertenec√≠a la persona.
+* `IdScholl 1`: Identificador del colegio al que asistiÛ la persona.
+* `yearCard1`: AÒo en el que se recopilaron los datos.
+* `gradeCard1`: Grado escolar al que pertenecÌa la persona.
 * `Height`: Altura de la persona en centimetros.
 * `Weight`: Peso de la persona en kg.
 * `Hand grip`: Fuerza de la mano calculado en kg.
@@ -142,6 +195,7 @@ summary(Card1)
 
 ```{r cormatCard1}
 datos = Card1[,c(3:12)]
+datos$Sex = as.factor(datos$Sex)
 datos$Sex = as.numeric(datos$Sex)
 datos$`IdSchool 1` = as.numeric(datos$`IdSchool 1`)
 datos$gradeCard1 = as.numeric(datos$gradeCard1)
@@ -192,10 +246,18 @@ theme(
 ### Cluster
 
 ```{r codoC1}
+library(factoextra)
 
-cluster = datos
+cluster = Card1[complete.cases(Card1),c(3,4,5,7:12)]
+cluster = unique(cluster)
+cluster$Sex = as.factor(cluster$Sex)
+cluster$Sex = as.numeric(cluster$Sex)
+cluster$`IdSchool 1` = as.numeric(cluster$`IdSchool 1`)
+cluster$gradeCard1 = as.numeric(cluster$gradeCard1)
 
-set.seed(90)
+set.seed(12)
+
+cluster[is.na(cluster)] = 0
 wss <- (nrow(cluster[,c()])-1)*sum(apply(cluster[,1:ncol(cluster)],2,var))
 
 for (i in 2:10) 
@@ -204,19 +266,35 @@ for (i in 2:10)
 plot(2:
        10, wss[c(2:10)], type="b", xlab="Number of Cluster",  ylab="Squares Summatory", main = "Diagrama de Codo")
 
+
 ```
 
 ```{r clusterC1}
 require("fpc")
 set.seed(90)
-km = kmeans(cluster, 6)
+km = kmeans(cluster, 5)
 cluster$grupo<-km$cluster
 
-plotcluster(cluster[,c(1:10)],cluster$grupo)
+plotcluster(cluster[,c(1:9)],cluster$grupo)
+
+g1<- cluster[cluster$grupo==1,]
+g2<- cluster[cluster$grupo==2,]
+g3<- cluster[cluster$grupo==3,]
+g4<- cluster[cluster$grupo==4,]
+
 ```
 
+```{r}
 
-### An√°lisis de Componentes Principales
+ggplot(data = cluster, aes(group = grupo, y = edad, fill = grupo)) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("Edad") + ylim(c(0,25))
+ggplot(data = cluster, aes(group = grupo, y = Height, fill = grupo)) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("Altura (cm)") + ylim(c(100,200))
+ggplot(data = cluster, aes(group = grupo, y = Weight, fill = grupo)) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("Peso (kg)") + ylim(c(0,100))
+ggplot(data = cluster, aes(group = grupo, y = `Hand grip`, fill = grupo)) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("Hand grip") + ylim(c(0,70))
+ggplot(data = cluster, aes(group = grupo, y = gradeCard1, fill = grupo)) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("Grado Escolar")
+
+```
+
+### An·lisis de Componentes Principales
 
 
 ## Card2
@@ -287,8 +365,12 @@ theme(
 
 ```{r codo2}
 
-cluster = datos2
+cluster = unique(Card2[,c(3,4,5,7:14)])
+cluster$Sex = as.numeric(cluster$Sex)
+cluster$`IdSchool 1` = as.numeric(cluster$`IdSchool 1`)
+cluster$`grade Card 2` = as.numeric(cluster$`grade Card 2`)
 
+set.seed(543)
 wss <- (nrow(cluster[,c()])-1)*sum(apply(cluster[,1:ncol(cluster)],2,var))
 
 for (i in 2:10) 
@@ -302,16 +384,24 @@ plot(2:
 
 ```{r cluster2}
 
-set.seed(90)
-km<-kmeans(cluster,7)
-km2 = kmeans(cluster, 6)
+set.seed(91)
+km<-kmeans(cluster,4)
 cluster$grupo<-km$cluster
-cluster$grupo2<-km2$cluster
 
-plotcluster(cluster,km$cluster)
+plotcluster(cluster[,c(1:11)],km$cluster)
 ```
 
-### An√°lisis de Componentes Principales
+```{r }
+ggplot(data = cluster, aes(group = grupo, y = edad, fill = grupo)) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("Edad") + ylim(c(0,25))
+ggplot(data = cluster, aes(group = grupo, y = `UAC1 cm`, fill = grupo)) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("UAC1 (cm)") + ylim(c(0,35))
+ggplot(data = cluster, aes(group = grupo, y = `TST1 mm`, fill = grupo)) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("TST1 (mm)") + ylim(c(0,35))
+ggplot(data = cluster, aes(group = grupo, y = `SSF1 mm`, fill = grupo)) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("SSF1 (mm)") + ylim(c(0,40))
+ggplot(data = cluster, aes(group = grupo, y = `grade Card 2`, fill = grupo)) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("Grado Escolar")
+
+
+```
+
+### An·lisis de Componentes Principales
 
 
 # Conclusiones
