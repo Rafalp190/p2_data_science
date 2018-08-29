@@ -233,7 +233,7 @@ La fuerza de agarre presenta una distribución aparentemente normal desde los 5 h
 
 Por otra parte, se eliminarán otras variables poco útiles como *entering date*, *entering data* y *User*. También se eliminarán *DOB* y *DOB decimal* debido a que ya se calculó la edad en cada registro.
 
-```{r , echo=FALSE}
+```{r remove_trash}
 
 completeData <- completeData %>% 
   mutate(`entering date` = NULL) %>% 
