@@ -1,0 +1,179 @@
+---
+title: "Proyecto 2 Chus"
+author: "Alejandro Vasquez"
+date: "28 de agosto de 2018"
+output: 
+  html_document:
+
+    number_sections: true
+
+    toc: true
+
+    fig_width: 8
+
+    fig_height: 6
+
+    theme: cosmo
+
+    highlight: tango
+
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+library(dplyr)
+library(ggplot2)
+```
+
+# Lectura y unión de bases de datos
+
+
+Leer datos de subjects, card1 y card2:
+
+```{r read_data}
+mainData <- as.data.frame(read_xlsx("./data/1-Subjects sex_ID_school_DOB.xlsx"))
+c1 <-  as.data.frame(read_xlsx("./data/4-Card1.xlsx"))
+c2 <-  as.data.frame(read_xlsx("./data/5-Card2.xlsx"))
+```
+
+
+Modificar los nombres de columnas y unión de bases de datos:
+
+```{r merge}
+colnames(mainData)[1] <- "Id"
+colnames(c1)[2] <- "date" 
+colnames(c2)[2] <- "date"
+
+cards <- merge(c1, c2, by = c("Id", "date"))
+completeData <- merge(mainData, cards, by = "Id")
+completeData$age <- round(completeData$date - completeData$`DOB decimal`, 0)
+```
+
+
+## Exploración de variables y elminación de outliers
+
+Gráfica de frecuencia de edades:
+
+```{r age_freq, echo=FALSE}
+ggplot(completeData, aes(x = age)) +
+  geom_bar() +
+  labs(x = "Edad", y = "Frecuencia")
+```
+
+Boxplots de altura por edad:
+
+```{r boxplot_height1, echo=FALSE}
+ggplot(completeData, aes(group = age, x = age, y = Height)) +
+  geom_boxplot() +
+  labs(x = "Edad", y = "Altura (cm)")
+```
+
+Las alturas de más de 250 cm no tienen sentido. Además, las edades mayores a 22 años tienen muy pocos datos. Se decidió removerlos:
+
+
+```{r rem_outliers}
+completeData <- completeData %>% 
+  filter(Height < 250) %>% 
+  filter(age < 23)
+```
+
+Gráfica de boxplots de altura por edades sin outliers:
+
+```{r boxplot_height2, echo=FALSE}
+ggplot(completeData, aes(group = age, x = age, y = Height)) +
+  geom_boxplot() +
+  labs(x = "Edad", y = "Altura (cm)")
+```
+
+
+Gráfica de boxplots de pesos por edades:
+```{r boxplot_weight1, echo=FALSE}
+ggplot(completeData, aes(group = age, x = age, y = Weight)) +
+  geom_boxplot() +
+  labs(x = "Edad", y = "Peso (kg)")
+```
+
+Pesos mayores a 200 kg no tienen sentidos. Se decidió eliminarlos:
+
+```{r }
+completeData <- completeData %>% 
+  filter(Weight < 200)
+```
+
+Gráfica de boxplots de pesos por edades sin outliers:
+
+```{r }
+ggplot(completeData, aes(group = age, x = age, y = Weight)) +
+  geom_boxplot() +
+  labs(x = "Edad", y = "Peso (kg)")
+```
+
+Gráficas de regresión lineal entre peso y altura por edad:
+
+```{r peso_altura, echo=FALSE}
+for(i in 4:22){
+  temp <- completeData %>% 
+    filter(age == i)
+  
+  print(ggplot(temp, aes(x = Weight, y = Height)) + geom_point() + 
+           labs(x = "Peso (kg)", y = "Altura (cm)", title = paste(i, " años")) +
+    geom_smooth(method = lm, se = F))
+}
+
+```
+
+Solo existen 4 datos para mediciones con cuatro años de edad. Se eliminarán:
+
+
+```{r rem_outliers2}
+completeData <- completeData %>% 
+  filter(age > 4)
+```
+
+
+
+
+```{r , echo=FALSE}
+ggplot(completeData, aes(x = Dental, y = Height)) + 
+  geom_bar(stat = "identity") +
+  labs(x = "Número de dientes", y = "Altura (cm)")
+```
+
+
+```{r , echo=FALSE}
+
+```
+
+
+```{r , echo=FALSE}
+
+```
+
+
+```{r , echo=FALSE}
+
+```
+
+
+```{r , echo=FALSE}
+
+```
+
+
+```{r , echo=FALSE}
+
+```
+
+
+
+```{r , echo=FALSE}
+
+```
+
+
+
+```{r , echo=FALSE}
+
+```
