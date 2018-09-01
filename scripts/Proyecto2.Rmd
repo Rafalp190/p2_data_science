@@ -1,6 +1,6 @@
 ---
-title: "Proyecto 2 (personal)"
-author: "Oliver Mazariegos"
+title: "Proyecto 2"
+author: "Oliver Mazariegos, Rafael Leon y Alejandro Vasquez"
 date: "18/8/2018"
 output: 
   html_document:
@@ -12,6 +12,8 @@ output:
     fig_width: 8
 
     fig_height: 6
+    
+    self_contained: true
 
     theme: cosmo
 
@@ -207,7 +209,7 @@ for(i in 4:22){
     filter(age == i)
   
   print(ggplot(temp, aes(x = Weight, y = Height)) + geom_point() + 
-           labs(x = "Peso (kg)", y = "Altura (cm)", title = paste(i, " años")) +
+           labs(x = "Peso (kg)", y = "Altura (cm)", title = paste(i, " anos")) +
     geom_smooth(method = lm, se = F))
 }
 
@@ -424,49 +426,49 @@ plotcluster(cluster[,c(1:9)],cluster$grupo)
 ### Edad
 
 ```{r edadCC, warning=F,message=F}
-ggplot(data = completeData, aes(group = grupo, y = age, fill = grupo)) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("Edad") + ylim(c(0,25))
+ggplot(data = completeData, aes(group = grupo, y = age, fill = factor(grupo))) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("Edad") + ylim(c(0,25))
 ```
 
 ### Altura
 
 ```{r alturaCC, warning=F,message=F}
-ggplot(data = completeData, aes(group = grupo, y = Height, fill = grupo)) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("Altura (cm)") + ylim(c(100,200))
+ggplot(data = completeData, aes(group = grupo, y = Height, fill = factor(grupo))) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("Altura (cm)") + ylim(c(100,200))
 ```
 
 ### Peso
 
 ```{r pesoCC, warning=F,message=F}
-ggplot(data = completeData, aes(group = grupo, y = Weight, fill = grupo)) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("Peso (kg)") + ylim(c(0,100))
+ggplot(data = completeData, aes(group = grupo, y = Weight, fill = factor(grupo))) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("Peso (kg)") + ylim(c(0,100))
 ```
 
 ### Hand grip
 
 ```{r Handgrip, warning=F,message=F}
-ggplot(data = completeData, aes(group = grupo, y = `Hand grip`, fill = grupo)) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("Hand grip") + ylim(c(0,70))
+ggplot(data = completeData, aes(group = grupo, y = `Hand grip`, fill = factor(grupo))) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("Hand grip") + ylim(c(0,70))
 ```
 
 ### Grade 
 
 ```{r gradeCC, warning=F,message=F}
-ggplot(data = completeData, aes(group = grupo, y = gradeCard1, fill = grupo)) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("Grado Escolar")
+ggplot(data = completeData, aes(group = grupo, y = gradeCard1, fill = factor(grupo))) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("Grado Escolar")
 ```
 
 ### UAC
 
 ```{r UACCC, warning=F,message=F}
-ggplot(data = completeData, aes(group = grupo, y = `UAC1 cm`, fill = grupo)) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("UAC1 cm") + ylim(c(10,40))
+ggplot(data = completeData, aes(group = grupo, y = `UAC1 cm`, fill = factor(grupo))) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("UAC1 cm") + ylim(c(10,40))
 ```
 
 ### TST
 
 ```{r TSTCC, warning=F,message=F}
-ggplot(data = completeData, aes(group = grupo, y = `TST1 mm`, fill = grupo)) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("TST1 mm") + ylim(c(0,35))
+ggplot(data = completeData, aes(group = grupo, y = `TST1 mm`, fill = factor(grupo))) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("TST1 mm") + ylim(c(0,35))
 ```
 
 ### SSF
 
 ```{r boxplotsCC, warning=F,message=F}
-ggplot(data = completeData, aes(group = grupo, y = `SSF1 mm`, fill = grupo)) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("SSF1 mm") + ylim(c(0,35))
+ggplot(data = completeData, aes(group = grupo, y = `SSF1 mm`, fill = factor(grupo))) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("SSF1 mm") + ylim(c(0,35))
 ```
 
 ## Genero {.tabset .tabset-fade}
@@ -536,7 +538,7 @@ ggplot(g4, aes(group = age, x = age, y = Height)) +
 ```{r HGCC1, warning=F,message=F}
 ggplot(g1, aes(y = `Hand grip`, x = age, group = age)) +
   geom_boxplot() +
-  labs(y = "fuerza de agarre (kg)", x = "Edad (años)")
+  labs(y = "fuerza de agarre (kg)", x = "Edad (anos)")
 ``` 
 
 ### Grupo 2
@@ -544,7 +546,7 @@ ggplot(g1, aes(y = `Hand grip`, x = age, group = age)) +
 ```{r HGCC2, warning=F,message=F}
 ggplot(g2, aes(y = `Hand grip`, x = age, group = age)) +
   geom_boxplot() +
-  labs(y = "fuerza de agarre (kg)", x = "Edad (años)")
+  labs(y = "fuerza de agarre (kg)", x = "Edad (anos)")
 ``` 
 
 ### Grupo 3
@@ -552,7 +554,7 @@ ggplot(g2, aes(y = `Hand grip`, x = age, group = age)) +
 ```{r HGCC3, warning=F,message=F}
 ggplot(g3, aes(y = `Hand grip`, x = age, group = age)) +
   geom_boxplot() +
-  labs(y = "fuerza de agarre (kg)", x = "Edad (años)")
+  labs(y = "fuerza de agarre (kg)", x = "Edad (anos)")
 ``` 
 
 ### Grupo 4
@@ -560,7 +562,7 @@ ggplot(g3, aes(y = `Hand grip`, x = age, group = age)) +
 ```{r HGCC4, warning=F,message=F}
 ggplot(g4, aes(y = `Hand grip`, x = age, group = age)) +
   geom_boxplot() +
-  labs(y = "fuerza de agarre (kg)", x = "Edad (años)")
+  labs(y = "fuerza de agarre (kg)", x = "Edad (anos)")
 ``` 
 
 ## Peso-Edad {.tabset .tabset-fade}
