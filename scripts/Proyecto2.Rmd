@@ -379,7 +379,11 @@ compPrincPCA<-PCA(completeData[,5:16],ncp=ncol(completeData[,5:16]), scale.unit 
 
 # Cluster
 
+Ahora que hemos unido ambos Cards, eliminado outliers y desechado variables innecesari, nuestro conjunto de datos está listo para entrar a un analisis de Clustering.
+
 ## Diagrama de Codo
+
+Antes de agrupar los datos, necesitamos averiguar cual es la cantidad optima de grupos.  Para averiguar este numero, utilizaremos el diagrama de codo del metodo de Ward.
 
 ```{r codoComplete, warning=F,message=F}
 library(factoextra)
@@ -403,6 +407,8 @@ plot(2:
 
 ## Creacion de Cluster
 
+Con ayuda del diagrama de codo, definiremos 4 como la cantidad de clusters a realizar. Utilizaremos la tecnica de k-medias para crear los grupos.
+
 ```{r clusterComplet, warning=F,message=F}
 require("fpc")
 library(cluster)
@@ -423,11 +429,15 @@ plotcluster(cluster[,c(1:9)],cluster$grupo)
 
 ## Analisis Express {.tabset .tabset-fade}
 
+Ahora que ya tenemos los distintos grupos, hagamos un rapido analisis sobre las distribuciones de cada variable dentro de los grupos
+
 ### Edad
 
 ```{r edadCC, warning=F,message=F}
 ggplot(data = completeData, aes(group = grupo, y = age, fill = factor(grupo))) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("Edad") + ylim(c(0,25))
 ```
+
+Podemos ver que esta bastante definido que los grupos estan muy bien definidos conforme a la edad de las personas. Aun asi, notese que en cada grupo la media esta bastante centrada en los boxplots excepto por el primer grupo.
 
 ### Altura
 
@@ -435,11 +445,15 @@ ggplot(data = completeData, aes(group = grupo, y = age, fill = factor(grupo))) +
 ggplot(data = completeData, aes(group = grupo, y = Height, fill = factor(grupo))) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("Altura (cm)") + ylim(c(100,200))
 ```
 
+En la altura se ve un comportamiento muy similar con la edad, lo unico curioso es que aqui si se observa que las alturas medias estan bastante centradas dentro de los boxplots.
+
 ### Peso
 
 ```{r pesoCC, warning=F,message=F}
 ggplot(data = completeData, aes(group = grupo, y = Weight, fill = factor(grupo))) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("Peso (kg)") + ylim(c(0,100))
 ```
+
+En el peso podemos ver el mismo comportamiento analizado anteriormente. Pero a diferencia de la edad y la altura, pareciera que el peso varía de forma distinta dentro de cada grupos.
 
 ### Hand grip
 
@@ -447,29 +461,39 @@ ggplot(data = completeData, aes(group = grupo, y = Weight, fill = factor(grupo))
 ggplot(data = completeData, aes(group = grupo, y = `Hand grip`, fill = factor(grupo))) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("Hand grip") + ylim(c(0,70))
 ```
 
+En la fuerza de la mano tambien tiene el mismo comportamiento que los anteriores, pero se puede ver que el mismo varia mucho mas en el grupo 4, que es el grupo con las personas mas adultas.
+
 ### Grade 
 
 ```{r gradeCC, warning=F,message=F}
 ggplot(data = completeData, aes(group = grupo, y = gradeCard1, fill = factor(grupo))) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("Grado Escolar")
 ```
 
-### UAC
+Nuevamente el patron es notable. La forma del boxplot del primero grupo puede ser devido a que los estudios primarios llegan hasta el numero **16** y los secundarios empiezan en **21**. Podria decirse que aqui se encuntran las personas en estudios basicos. En el segundo grupo estan los grados mas pequeños, podriamos llamarlos el primer ciclo primario. En el tercer grupo estan los del segundo ciclo primario y en el cuarto grupo estan los bachilleres.
+
+### UAC (circunferencia del tricep)
 
 ```{r UACCC, warning=F,message=F}
 ggplot(data = completeData, aes(group = grupo, y = `UAC1 cm`, fill = factor(grupo))) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("UAC1 cm") + ylim(c(10,40))
 ```
 
-### TST
+En la circuferencia de los triceps tambien siguen el patron encontrado, lo cual tiene sentido ya que los musculos tambien crecen conforme la edad.
+
+### TST (pliegue cutaneo tricep)
 
 ```{r TSTCC, warning=F,message=F}
 ggplot(data = completeData, aes(group = grupo, y = `TST1 mm`, fill = factor(grupo))) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("TST1 mm") + ylim(c(0,35))
 ```
 
-### SSF
+La variabilidad en el pliege cutaneo de los triceps es muy desigual entre los grupos, y muchos de los grupos comparten similitudes en los datos. Curiosamente estos boxplots no coinciden con los patrones entre grupos encontrados anteriormente.
+
+### SSF (pliege cutaneo subescapular)
 
 ```{r boxplotsCC, warning=F,message=F}
 ggplot(data = completeData, aes(group = grupo, y = `SSF1 mm`, fill = factor(grupo))) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("SSF1 mm") + ylim(c(0,35))
 ```
+
+En el pliegue subescapular pareciera que siguen el patron encontrado anteriormete. Pero el primer grupo y el cuarto son muy similares, aunque la media del primer grupo está por arriba de la media del cuarto. Sera esto debido a la cantidad de hombres y mujeres dentro del grupo?
 
 ## Genero {.tabset .tabset-fade}
 
@@ -479,11 +503,15 @@ ggplot(data = completeData, aes(group = grupo, y = `SSF1 mm`, fill = factor(grup
 barplot(prop.table(table(g1$Sex)))
 ```
 
+En el grupo 1 hay alrededor de un 20% mas mujeres que hombres.
+
 ### Grupo 2
 
 ```{r generoCC2, warning=F,message=F}
 barplot(prop.table(table(g2$Sex)))
 ```
+
+En el grupo 2 hay alrededor de 10% mas hombres que mujeres.
 
 ### Grupo 3
 
@@ -491,11 +519,15 @@ barplot(prop.table(table(g2$Sex)))
 barplot(prop.table(table(g3$Sex)))
 ```
 
+En el grupo 3 hay alrededor de 20% mas hombres que mujeres.
+
 ### Grupo 4
 
 ```{r generoCC4, warning=F,message=F}
 barplot(prop.table(table(g4$Sex)))
 ```
+
+En el grupo 4, en su mayoria son hombres. Esto podria dar lugar al porque en el grupo 1 se encuentran mas mujeres que hombres. 
 
 ## Altura-Edad {.tabset .tabset-fade}
 
@@ -507,6 +539,8 @@ ggplot(g1, aes(group = age, x = age, y = Height)) +
   labs(x = "Edad", y = "Altura (cm)")
 ```
 
+Se puede ver que en el grupo 1 el aumento que las alturas mayores sen encuentran entre los 15 y 16 con alturas promedio de 155cm. Esto puede ser debido a la gran cantidad de mujeres presentes en el grupo.
+
 ### Grupo 2
 
 ```{r altura-edad2, warning=F,message=F}
@@ -514,6 +548,8 @@ ggplot(g2, aes(group = age, x = age, y = Height)) +
   geom_boxplot() +
   labs(x = "Edad", y = "Altura (cm)")
 ```
+
+En el grupo 2 estan las personas mas juvenes, se puede ver como cambia drasticamente la altura en los niños y se empieza a estabilizar a los 10 años.
 
 ### Grupo 3
 
@@ -523,6 +559,8 @@ ggplot(g3, aes(group = age, x = age, y = Height)) +
   labs(x = "Edad", y = "Altura (cm)")
 ```
 
+En el grupo 3 se puede observar como las personas estan entrando a la adolescencia y empiezan a tener cambios drasticos en la altura entre los 11 y 14 años.
+
 ### Grupo 4
 
 ```{r altura-edad4, warning=F,message=F}
@@ -530,6 +568,8 @@ ggplot(g4, aes(group = age, x = age, y = Height)) +
   geom_boxplot() +
   labs(x = "Edad", y = "Altura (cm)")
 ```
+
+En el grupo 4 tenemos a las personas mas altas de todo el conjunto de datos.
 
 ## Hand Grip-Edad {.tabset .tabset-fade}
 
@@ -541,6 +581,8 @@ ggplot(g1, aes(y = `Hand grip`, x = age, group = age)) +
   labs(y = "fuerza de agarre (kg)", x = "Edad (anos)")
 ``` 
 
+En el grupo 1, el de los jovenes, se ve que obtienen mas fuerza entre mas crecen, pero la fuerza deja de aumentar considerablemente despues de los 15 años, esto puede ser debido a la alta cantidad de mujeres, suponiendo que las mujeres tienen menos fuerza en las manos que los hombres.
+
 ### Grupo 2
 
 ```{r HGCC2, warning=F,message=F}
@@ -548,6 +590,8 @@ ggplot(g2, aes(y = `Hand grip`, x = age, group = age)) +
   geom_boxplot() +
   labs(y = "fuerza de agarre (kg)", x = "Edad (anos)")
 ``` 
+
+En el grupo 2 estan las personas mas debiles, se puede ver como su fuerza va en promedio de 6 a 12 kg de fuerza de agarre
 
 ### Grupo 3
 
@@ -557,6 +601,8 @@ ggplot(g3, aes(y = `Hand grip`, x = age, group = age)) +
   labs(y = "fuerza de agarre (kg)", x = "Edad (anos)")
 ``` 
 
+En el grupo 3 se ve como las personas van obteniendo mas fuerza conforme crecen y dejan de ser niños
+
 ### Grupo 4
 
 ```{r HGCC4, warning=F,message=F}
@@ -564,6 +610,8 @@ ggplot(g4, aes(y = `Hand grip`, x = age, group = age)) +
   geom_boxplot() +
   labs(y = "fuerza de agarre (kg)", x = "Edad (anos)")
 ``` 
+
+En el grupo 4 se encuentran las personas mas fuertes, mas adultas y en su mayoria hombres. Se puede apreciar tambien las grandes variaciones que se encuentran, lo cual contrasta lo analizado en la exploracion anterior, en la cual se concluyo que en altas edades hay bastantes personas debiles como personas fuertes.
 
 ## Peso-Edad {.tabset .tabset-fade}
 
@@ -575,6 +623,8 @@ ggplot(g1, aes(group = age, x = age, y = Weight)) +
   labs(x = "Edad", y = "Peso (kg)")
 ```  
 
+En el grupo 1 podemos ver que el promedio de peso cae levemente durante la epoca de pubertad pero se mantiene bastante constante. En lo que se observa cambio es en la variabilidad de los pesos. Los peso promedio esta por los 50 kg.
+
 ### Grupo 2
 
 ```{r WeightCC2, warning=F,message=F}
@@ -583,6 +633,8 @@ ggplot(g2, aes(group = age, x = age, y = Weight)) +
   labs(x = "Edad", y = "Peso (kg)")
 ``` 
 
+En el grupo 2 se ve como los niños aumentan de peso gradualmente durante su crecimiento. Aqui se encuentran las personas menos pesadas.
+
 ### Grupo 3
 
 ```{r WeightCC3, warning=F,message=F}
@@ -590,6 +642,8 @@ ggplot(g3, aes(group = age, x = age, y = Weight)) +
   geom_boxplot() +
   labs(x = "Edad", y = "Peso (kg)")
 ``` 
+
+En el grupo 3 puede verse que estan las personas mas pesadas de 5, 6 y 7 años, edades que tambien estan presente en el grupo 2. Luego se puede apreciar como las personas siguen aumentando de peso conforme van creciendo.
 
 ### Grupo 4
 
@@ -600,3 +654,12 @@ ggplot(g4, aes(group = age, x = age, y = Weight)) +
   labs(x = "Edad", y = "Peso (kg)")
 ``` 
 
+En el grupo 4 estan las personas mas pesadas de todas. desde niños hasta adultos.
+
+## Conclusion de Cluster
+
+* La edad es una medida critica para entrar o no a los grupos.
+* Si eres un niño con peso y altura de un joven, el clustering te agrupará a ellos y viceversa.
+* El grupo 1 es el unico grupo con mas mujeres.
+* En el grupo 4 hay hombres en su mayoria.
+* Los pliegues cutaneos varian de distintas maneras dentro de los grupos y no existe una diferencia representante entre el grupo 1 y 4.
