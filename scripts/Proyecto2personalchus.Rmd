@@ -223,7 +223,7 @@ La fuerza de agarre presenta una distribución aparentemente normal desde los 5 h
 Probando agrupar por sexo:
 
 
-```{r plot_handgrip_by_age, echo=FALSE}
+```{r plot_handgrip_by_age_sex, echo=FALSE}
 
 for(i in 5:21){
   temp <- completeData %>% 
