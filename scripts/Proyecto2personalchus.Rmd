@@ -124,12 +124,13 @@ for(i in 4:22){
 
 ```
 
-Solo existen 4 datos para mediciones con cuatro años de edad. Se eliminarán:
+Solo existen 4 datos para mediciones con cuatro y veintidos años de edad. Se eliminarán:
 
 
 ```{r rem_outliers2}
 completeData <- completeData %>% 
-  filter(age > 4)
+  filter(age > 4) %>% 
+  filter(age < 22)
 ```
 
 Número de dientes contra altura:
@@ -165,10 +166,10 @@ paste(round(nrow(filter(completeData, is.na(`IdSchool 2`))) /
 Casi el 100% de los registros no poseen esta información. Se eliminará esta columna. Además, se eliminarán las columnas *Repetition* y *RepetitionCard1* ya que estas proveen poca información acerca de la altura. Es más, los alumnos repitentes podrían distorsionar las predicciones.
 
 ```{r remove_idschool2_repetitions}
-colnames(completeData)[6] <- "IdSchool2"
+
 
 completeData <- completeData %>% 
-  mutate(IdSchool2 = NULL) %>% 
+  mutate(`IdSchool 2` = NULL) %>% 
   mutate(Repetition = NULL) %>% 
   mutate(RepetitionCard1 = NULL)
 
@@ -200,7 +201,7 @@ Ahora graficar la fuerza de agarre por edad:
 
 ```{r plot_handgrip_by_age, echo=FALSE}
 
-for(i in 5:22){
+for(i in 5:21){
   temp <- completeData %>% 
     filter(age == i)
   
@@ -217,7 +218,32 @@ for(i in 5:22){
 
 ```
 
-La fuerza de agarre presenta una distribución aparentemente normal desde los 5 hasta los 14 años. Sin embargo, a partir de los 15 años y sobre todo entre los 17 y 19 años, se pueden observar claramente dos distribuciones que se traslapan. Esto indica que en estas edades la diferencia de fuerza de agarre es mucho más marcada. Se tendrá esto en cuenta para futuras predicciones.
+La fuerza de agarre presenta una distribución aparentemente normal desde los 5 hasta los 14 años. Sin embargo, a partir de los 15 años y sobre todo entre los 17 y 19 años, se pueden observar claramente dos distribuciones que se traslapan. Esto indica que en estas edades la diferencia de fuerza de agarre es mucho más marcada entre dos grupos que no se encuentran diferenciados. 
+
+Probando agrupar por sexo:
+
+
+```{r plot_handgrip_by_age, echo=FALSE}
+
+for(i in 5:21){
+  temp <- completeData %>% 
+    filter(age == i)
+  
+  print(ggplot(temp, aes(x = `Hand grip`, fill = Sex)) + 
+          geom_bar() + 
+           labs(y = "Frecuencia", 
+                x = "fuerza de agarre (kg)", 
+                title = paste(i, " años")
+                )
+  )
+}
+
+
+
+```
+
+Se observa claramente que a partir de los 15 años, los hombres tienen una distribución normal (aparentemente) con una media de fuerza de agarre mayor al de las mujeres. Por lo tanto, debemos considerarlos como dos grupos claramente distintos a partir de esa edad.
+
 
 Por otra parte, se eliminarán otras variables poco útiles como *entering date*, *entering data* y *User*. También se eliminarán *DOB* y *DOB decimal* debido a que ya se calculó la edad en cada registro.
 
