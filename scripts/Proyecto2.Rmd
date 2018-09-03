@@ -23,25 +23,36 @@ output:
 ---
 
 
-# Situación Problemática
+# Situaci?n Problem?tica
 
 No se ha buscado la relacion entre habilidades cognitivas, crecimiento y salud de los huesos utilizando los datos del estudio longitudinal de la UVG y los estudios que se han realizado con datos parecidos no han sido bien investigados en paises de bajos y medianos ingresos.
 
-Los datos utilizados para este analisis son el producto de un estudio longitudinal diseñado por el Dr. Barry Bogin hace mas de 50 años en conjunto con el Colegio Americano de Guatemala. Ellos se propusieron a colectar datos longitudinalmente de estudiantes de todos los años y darle seguimiento a su crecimiento de forma anual hasta el momento en el que completaban sus estudios de bachillerato.
-El estudio se expandió a 6 colegios más a lo largo de los años y se cuenta con datos de peso, talla, IQ, pruebas de lectura y masa osea para registros comenzando en el año 1953.
+Los datos utilizados para este analisis son el producto de un estudio longitudinal dise?ado por el Dr. Barry Bogin hace mas de 50 a?os en conjunto con el Colegio Americano de Guatemala. Ellos se propusieron a colectar datos longitudinalmente de estudiantes de todos los a?os y darle seguimiento a su crecimiento de forma anual hasta el momento en el que completaban sus estudios de bachillerato.
+El estudio se expandi? a 6 colegios m?s a lo largo de los a?os y se cuenta con datos de peso, talla, IQ, pruebas de lectura y masa osea para registros comenzando en el a?o 1953.
 
-Esta base de datos pertenece a la fundación Bill and Melinda Gates, los cuales donaron los fondos necesarios para digitalizarla.
+Esta base de datos pertenece a la fundaci?n Bill and Melinda Gates, los cuales donaron los fondos necesarios para digitalizarla.
 
-# Problema Cientifico
+# Problema Cientifico  
 
+Los niÃ±os del dataset escogido tienen una estatura menor a los niÃ±os de otros paises para los mismos grupos etarios. Se estÃ¡ buscando formas de extrapolar los datos de la base de datos a nivel nacional para poder utilizar macroindicadores para buscar una razÃ³n por la cual los niÃ±os de Guatemala son mÃ¡s pequeÃ±os.
 
-## Objetivos
+## Objetivos  
+### General
 
+* DiseÃ±ar un modelo predictivo para estatura y/o peso basado en los datos disponibles del estudio longitudinal del Dr. Bogin para poder tener datos representativos de la realidad nacional. 
+
+### EspecÃ­ficos
+ *  Realizar un analisis exploratorio de los datos para determinar la forma apropiada de diseÃ±ar
+ el modelo predictivo sugerido.
+ *  DiseÃ±ar un modelo predictivo para peso y/o talla
+ *  Probar distintos modelos predictivos diferentes para compararlos entre sÃ­ y escoger el mejor.
+ *  Realizar una limpieza general de los Datos a utilizar.
+ 
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(knitr)
-opts_knit$set(root.dir = "~/R")
+#opts_knit$set(root.dir = "~/R")
 library(readxl)
 library(dplyr)
 library(Matrix)
@@ -57,8 +68,8 @@ library(FactoMineR)
 ## Leyendo Datos
 
 * Subjects: Informacion personal de cada sujeto de prueba.
-* Card1: Informacion fisiológica de los sujetos.
-* Card2: Informacion fisiológica complementaria.
+* Card1: Informacion fisiol?gica de los sujetos.
+* Card2: Informacion fisiol?gica complementaria.
 
 ```{r lectura}
 
@@ -73,7 +84,7 @@ card2 = as.data.table(read_xlsx("./data/5-Card2.xlsx"))
 En las tres bases de datos existen registros de control de digitalizacion como.  
 
 * `entering date`: Fecha en la que los datos fueron digitalizados.
-* `User` : Usuario que digitalizó el dato.
+* `User` : Usuario que digitaliz? el dato.
 
 Estas variables, por ser solo de control, junto a `Repetition` en `Card1` y `Card2`, que no esta presente en casi todo el conjunto de datos, seran desechadas.
 
@@ -85,34 +96,34 @@ En Subjects podemos encontrar las siguientes variables personales de cada sujeto
 
 * `ID`: Identificador personal para cada persona involucrada en el set de datos.
 * `DOB`: Fecha de nacimiento de la persona.
-* `DOB decimal`: Año de nacimiento de la persona en representacion decimal.
+* `DOB decimal`: A?o de nacimiento de la persona en representacion decimal.
 * `Sex`: Sexo de la persona.
-* `IdSchool 1`: Identificador del colegio al que asistió la persona.
+* `IdSchool 1`: Identificador del colegio al que asisti? la persona.
 * `IdSchool 2`: Valor booleano que representa si el sujeto ya no estudia en el colegio representado en `IdSchool 1`
 
 ### Card1
 
 En Card1 podemos encontrar las siguientes caracteristicas fisiologicas de los sujetos de observacion.  
 
-* `yearCard1`: Año en el que se recopilaron los datos.
-* `gradeCard1`: Grado escolar al que pertenecía la persona.
+* `yearCard1`: A?o en el que se recopilaron los datos.
+* `gradeCard1`: Grado escolar al que pertenec?a la persona.
 * `Height`: Altura de la persona en centimetros.
 * `Weight`: Peso de la persona en kg.
 * `Hand grip`: Fuerza de la mano calculado en kg.
-* `Dental`: Dentición piezas del sujeto. Número de piezas permanentes eruptadas.
+* `Dental`: Dentici?n piezas del sujeto. N?mero de piezas permanentes eruptadas.
 
 ### Card2
 
 En Card2 podemos encontrar las siguientes caracteristicas fisiologicas de los sujetos de observacion.  
 
-* `yearCard2`: Año en el que se recopilaron los datos.
-* `grade Card 2`: Grado escolar al que pertenecía la persona.
+* `yearCard2`: A?o en el que se recopilaron los datos.
+* `grade Card 2`: Grado escolar al que pertenec?a la persona.
 * `UAC1`: Circunferencia Tricep 1
 * `UAC2`: Circunferencia Tricep 2
-* `TST1`: Pliegue Cutáneo Tricep 1
-* `TST2`: Pliegue Cutáneo Tricep 2
-* `SSF1`: Pliegue Cutáneo Subescapular 1
-* `SSF2`: Pliegue Cutáneo Subescapular 2
+* `TST1`: Pliegue Cut?neo Tricep 1
+* `TST2`: Pliegue Cut?neo Tricep 2
+* `SSF1`: Pliegue Cut?neo Subescapular 1
+* `SSF2`: Pliegue Cut?neo Subescapular 2
 
 ## Union y Limpieza de Datos
 
@@ -136,7 +147,7 @@ completeData$age <- round(completeData$date - completeData$`DOB decimal`, 0)
 
 ##Card1-Card2
 
-### Exploración de variables y eliminacion de outlier
+### Exploraci?n de variables y eliminacion de outlier
 
 #### Frecuencia de edades
 
@@ -154,7 +165,7 @@ ggplot(completeData, aes(group = age, x = age, y = Height)) +
   labs(x = "Edad", y = "Altura (cm)")
 ```
 
-Las alturas de más de 250 cm no tienen sentido. Además, las edades mayores a 22 años tienen muy pocos datos. Se decidió removerlos:
+Las alturas de m?s de 250 cm no tienen sentido. Adem?s, las edades mayores a 22 a?os tienen muy pocos datos. Se decidi? removerlos:
 
 
 ```{r alturaEdadRem, warning=F,message=F}
@@ -183,7 +194,7 @@ ggplot(completeData, aes(group = age, x = age, y = Weight)) +
 ```
 
 
-Pesos mayores a 200 kg no tienen sentidos. Se decidió eliminarlos:
+Pesos mayores a 200 kg no tienen sentidos. Se decidi? eliminarlos:
 
 ```{r remoutWeight, warning=F,message=F}
 completeData <- completeData %>% 
@@ -215,7 +226,7 @@ for(i in 4:22){
 
 ```
 
-Solo existen 4 datos para mediciones con cuatro años de edad. Se eliminarán:
+Solo existen 4 datos para mediciones con cuatro a?os de edad. Se eliminar?n:
 
 
 ```{r rem_outliers2, warning=F,message=F}
@@ -228,10 +239,10 @@ completeData <- completeData %>%
 ```{r , warning=F,message=F}
 ggplot(completeData, aes(group = Dental, x = Dental, y = Height)) +
   geom_boxplot() +
-  labs(x = "Número de dientes", y = "Altura (cm)")
+  labs(x = "N?mero de dientes", y = "Altura (cm)")
 ```
 
-No tiene sentido que hayan niños tan altos sin dientes permanentes "erupcionados". Según la Asociación Dental de América, se espera que a partir de los 6-7 años por lo menos se hayan desarrollado los incisivos centrales. Probablemente esos "0"s signifiquen que no fue registrado el dato. Para comprobar cuántos registros de niños mayores años no tienen dientes permanentes "erupcionados":
+No tiene sentido que hayan ni?os tan altos sin dientes permanentes "erupcionados". Seg?n la Asociaci?n Dental de Am?rica, se espera que a partir de los 6-7 a?os por lo menos se hayan desarrollado los incisivos centrales. Probablemente esos "0"s signifiquen que no fue registrado el dato. Para comprobar cu?ntos registros de ni?os mayores a?os no tienen dientes permanentes "erupcionados":
 
 
 ```{r check_teeth_age, warning=F,message=F}
@@ -239,7 +250,7 @@ paste(round((nrow(filter(completeData, age > 7 & Dental == 0))
              / nrow(completeData) * 100),2), "%")
 ```
 
-Más del 60% de los datos no tienen ese registro, por lo que no se utilizará esta columna.
+M?s del 60% de los datos no tienen ese registro, por lo que no se utilizar? esta columna.
 
 ```{r remove_Dental, warning=F,message=F}
 completeData <- completeData %>% 
@@ -256,7 +267,7 @@ paste(round(nrow(filter(completeData, is.na(`IdSchool 2`))) /
               nrow(completeData) * 100, 2), "%")
 ```
 
-Casi el 100% de los registros no poseen esta información. Se eliminará esta columna. Además, se eliminarán las columnas *Repetition* y *RepetitionCard1* ya que estas proveen poca información acerca de la altura. Es más, los alumnos repitentes podrían distorsionar las predicciones.
+Casi el 100% de los registros no poseen esta informaci?n. Se eliminar? esta columna. Adem?s, se eliminar?n las columnas *Repetition* y *RepetitionCard1* ya que estas proveen poca informaci?n acerca de la altura. Es m?s, los alumnos repitentes podr?an distorsionar las predicciones.
 
 ```{r remove_idschool2_repetitions, warning=F,message=F}
 colnames(completeData)[6] <- "IdSchool2"
@@ -277,10 +288,10 @@ Visualizar los datos de pruebas de fuerza de agarre:
 ```{r hand_grip, warning=F,message=F}
 ggplot(completeData, aes(y = `Hand grip`, x = age, group = age)) +
   geom_boxplot() +
-  labs(y = "fuerza de agarre (kg)", x = "Edad (años)")
+  labs(y = "fuerza de agarre (kg)", x = "Edad (a?os)")
 ```
 
-No existen registros de pruebas de fuerza de agarre en los que se superen los 100 kg de fuerza de agarre, por lo que se eliminarán los outliers y se vuelve a graficar: 
+No existen registros de pruebas de fuerza de agarre en los que se superen los 100 kg de fuerza de agarre, por lo que se eliminar?n los outliers y se vuelve a graficar: 
 
 ```{r remove_handgrip_outliers, warning=F,message=F}
 completeData <- completeData %>% 
@@ -292,7 +303,7 @@ completeData <- completeData %>%
 ```{r hand_grip2, warning=F,message=F}
 ggplot(completeData, aes(y = `Hand grip`, x = age, group = age)) +
   geom_boxplot() +
-  labs(y = "fuerza de agarre (kg)", x = "Edad (años)")
+  labs(y = "fuerza de agarre (kg)", x = "Edad (a?os)")
 ```
 
 #### Fuerza de Agarre-Edad
@@ -307,7 +318,7 @@ for(i in 5:22){
           geom_bar() + 
            labs(y = "Frecuencia", 
                 x = "fuerza de agarre (kg)", 
-                title = paste(i, " años")
+                title = paste(i, " a?os")
                 )
   )
 }
@@ -316,7 +327,7 @@ for(i in 5:22){
 
 ```
 
-La fuerza de agarre presenta una distribución aparentemente normal desde los 5 hasta los 14 años. Sin embargo, a partir de los 15 años y sobre todo entre los 17 y 19 años, se pueden observar claramente dos distribuciones que se traslapan. Esto indica que en estas edades la diferencia de fuerza de agarre es mucho más marcada. Se tendrá esto en cuenta para futuras predicciones.
+La fuerza de agarre presenta una distribuci?n aparentemente normal desde los 5 hasta los 14 a?os. Sin embargo, a partir de los 15 a?os y sobre todo entre los 17 y 19 a?os, se pueden observar claramente dos distribuciones que se traslapan. Esto indica que en estas edades la diferencia de fuerza de agarre es mucho m?s marcada. Se tendr? esto en cuenta para futuras predicciones.
 
 
 
@@ -324,7 +335,7 @@ La fuerza de agarre presenta una distribución aparentemente normal desde los 5 h
 
 ### Desecho de Variables
 
-Se eliminarán otras variables poco útiles como *entering date*, *entering data* y *User*. También se eliminarán *DOB* y *DOB decimal* debido a que ya se calculó la edad en cada registro.
+Se eliminar?n otras variables poco ?tiles como *entering date*, *entering data* y *User*. Tambi?n se eliminar?n *DOB* y *DOB decimal* debido a que ya se calcul? la edad en cada registro.
 
 ```{r remove_trash, warning=F,message=F}
 
@@ -337,9 +348,9 @@ completeData <- completeData %>%
   mutate(`DOB decimal` = NULL)
 
 ```
-# Analisís de Componentes Principales
+# Analis?s de Componentes Principales
 
-Se evalurá la factibilidad de realizar un análisis de componentes principales utilizando la base de datos unificada del estudio.
+Se evalur? la factibilidad de realizar un an?lisis de componentes principales utilizando la base de datos unificada del estudio.
 
 ```{r PCA_preview, warning=F,message=F}
 pafDatos<-paf(as.matrix(completeData[,5:16]))
@@ -351,13 +362,13 @@ cortest.bartlett(completeData[,5:16])
 
 Como se puede observar se obtuvo un KMO de *0.86* y un coeficiente de Bartlett muy elevado *2421661* por lo que parece que un analisis de componentes principales es una buena idea. Considerando que el valor P indicado es de 0. 
 
-## Matriz de Correlación
+## Matriz de Correlaci?n
 
 ```{r corrmat_pca, warning=F,message=F}
 kable(cor(completeData[,5:16],use = "pairwise.complete.obs"))
 ```
 
-En la matriz de correlación observamos que algunas variables se encuentran relacionadas por lo que se procederá a realizar el analisis de componentes principales para intentar reducir el dataset.
+En la matriz de correlaci?n observamos que algunas variables se encuentran relacionadas por lo que se proceder? a realizar el analisis de componentes principales para intentar reducir el dataset.
 
 ```{r pc, warning=F,message=F}
 compPrinc<-prcomp(completeData[,5:16], scale = T)
@@ -371,7 +382,7 @@ summary(compPrinc)
 compPrincPCA<-PCA(completeData[,5:16],ncp=ncol(completeData[,5:16]), scale.unit = T)
 ```
 
-
+Al realizar el anÃ¡lisis de componentes principales observamos que realmente no se redujo el dataset de ninguna forma al evaluar los componentes principales. Los indicadores utilizados como KMO y Bartlett parecen indicar que se puede realizar un anÃ¡lisis de componentes principales pero como se puede observar en las comunalidades la mayorÃ­a de las variables seleccionadas para el anÃ¡lisis del PCA explican su variabilidad correctamente. Por lo que realizar un anÃ¡lisis de componentes principales solo reordena las variables de la mÃ¡s variable a la menos variable. Esto es innecesario por lo que no se realizarÃ¡ anÃ¡lisis de componentes principales y se trabajarÃ¡ con las variables del set de datos tal y como estÃ¡n.
 
 
 
@@ -379,7 +390,7 @@ compPrincPCA<-PCA(completeData[,5:16],ncp=ncol(completeData[,5:16]), scale.unit 
 
 # Cluster
 
-Ahora que hemos unido ambos Cards, eliminado outliers y desechado variables innecesari, nuestro conjunto de datos está listo para entrar a un analisis de Clustering.
+Ahora que hemos unido ambos Cards, eliminado outliers y desechado variables innecesari, nuestro conjunto de datos est? listo para entrar a un analisis de Clustering.
 
 ## Diagrama de Codo
 
@@ -453,7 +464,7 @@ En la altura se ve un comportamiento muy similar con la edad, lo unico curioso e
 ggplot(data = completeData, aes(group = grupo, y = Weight, fill = factor(grupo))) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("Peso (kg)") + ylim(c(0,100))
 ```
 
-En el peso podemos ver el mismo comportamiento analizado anteriormente. Pero a diferencia de la edad y la altura, pareciera que el peso varía de forma distinta dentro de cada grupos.
+En el peso podemos ver el mismo comportamiento analizado anteriormente. Pero a diferencia de la edad y la altura, pareciera que el peso var?a de forma distinta dentro de cada grupos.
 
 ### Hand grip
 
@@ -469,7 +480,7 @@ En la fuerza de la mano tambien tiene el mismo comportamiento que los anteriores
 ggplot(data = completeData, aes(group = grupo, y = gradeCard1, fill = factor(grupo))) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("Grado Escolar")
 ```
 
-Nuevamente el patron es notable. La forma del boxplot del primero grupo puede ser devido a que los estudios primarios llegan hasta el numero **16** y los secundarios empiezan en **21**. Podria decirse que aqui se encuntran las personas en estudios basicos. En el segundo grupo estan los grados mas pequeños, podriamos llamarlos el primer ciclo primario. En el tercer grupo estan los del segundo ciclo primario y en el cuarto grupo estan los bachilleres.
+Nuevamente el patron es notable. La forma del boxplot del primero grupo puede ser devido a que los estudios primarios llegan hasta el numero **16** y los secundarios empiezan en **21**. Podria decirse que aqui se encuntran las personas en estudios basicos. En el segundo grupo estan los grados mas peque?os, podriamos llamarlos el primer ciclo primario. En el tercer grupo estan los del segundo ciclo primario y en el cuarto grupo estan los bachilleres.
 
 ### UAC (circunferencia del tricep)
 
@@ -493,7 +504,7 @@ La variabilidad en el pliege cutaneo de los triceps es muy desigual entre los gr
 ggplot(data = completeData, aes(group = grupo, y = `SSF1 mm`, fill = factor(grupo))) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("SSF1 mm") + ylim(c(0,35))
 ```
 
-En el pliegue subescapular pareciera que siguen el patron encontrado anteriormete. Pero el primer grupo y el cuarto son muy similares, aunque la media del primer grupo está por arriba de la media del cuarto. Sera esto debido a la cantidad de hombres y mujeres dentro del grupo?
+En el pliegue subescapular pareciera que siguen el patron encontrado anteriormete. Pero el primer grupo y el cuarto son muy similares, aunque la media del primer grupo est? por arriba de la media del cuarto. Sera esto debido a la cantidad de hombres y mujeres dentro del grupo?
 
 ## Genero {.tabset .tabset-fade}
 
@@ -549,7 +560,7 @@ ggplot(g2, aes(group = age, x = age, y = Height)) +
   labs(x = "Edad", y = "Altura (cm)")
 ```
 
-En el grupo 2 estan las personas mas juvenes, se puede ver como cambia drasticamente la altura en los niños y se empieza a estabilizar a los 10 años.
+En el grupo 2 estan las personas mas juvenes, se puede ver como cambia drasticamente la altura en los ni?os y se empieza a estabilizar a los 10 a?os.
 
 ### Grupo 3
 
@@ -559,7 +570,7 @@ ggplot(g3, aes(group = age, x = age, y = Height)) +
   labs(x = "Edad", y = "Altura (cm)")
 ```
 
-En el grupo 3 se puede observar como las personas estan entrando a la adolescencia y empiezan a tener cambios drasticos en la altura entre los 11 y 14 años.
+En el grupo 3 se puede observar como las personas estan entrando a la adolescencia y empiezan a tener cambios drasticos en la altura entre los 11 y 14 a?os.
 
 ### Grupo 4
 
@@ -581,7 +592,7 @@ ggplot(g1, aes(y = `Hand grip`, x = age, group = age)) +
   labs(y = "fuerza de agarre (kg)", x = "Edad (anos)")
 ``` 
 
-En el grupo 1, el de los jovenes, se ve que obtienen mas fuerza entre mas crecen, pero la fuerza deja de aumentar considerablemente despues de los 15 años, esto puede ser debido a la alta cantidad de mujeres, suponiendo que las mujeres tienen menos fuerza en las manos que los hombres.
+En el grupo 1, el de los jovenes, se ve que obtienen mas fuerza entre mas crecen, pero la fuerza deja de aumentar considerablemente despues de los 15 a?os, esto puede ser debido a la alta cantidad de mujeres, suponiendo que las mujeres tienen menos fuerza en las manos que los hombres.
 
 ### Grupo 2
 
@@ -601,7 +612,7 @@ ggplot(g3, aes(y = `Hand grip`, x = age, group = age)) +
   labs(y = "fuerza de agarre (kg)", x = "Edad (anos)")
 ``` 
 
-En el grupo 3 se ve como las personas van obteniendo mas fuerza conforme crecen y dejan de ser niños
+En el grupo 3 se ve como las personas van obteniendo mas fuerza conforme crecen y dejan de ser ni?os
 
 ### Grupo 4
 
@@ -633,7 +644,7 @@ ggplot(g2, aes(group = age, x = age, y = Weight)) +
   labs(x = "Edad", y = "Peso (kg)")
 ``` 
 
-En el grupo 2 se ve como los niños aumentan de peso gradualmente durante su crecimiento. Aqui se encuentran las personas menos pesadas.
+En el grupo 2 se ve como los ni?os aumentan de peso gradualmente durante su crecimiento. Aqui se encuentran las personas menos pesadas.
 
 ### Grupo 3
 
@@ -643,7 +654,7 @@ ggplot(g3, aes(group = age, x = age, y = Weight)) +
   labs(x = "Edad", y = "Peso (kg)")
 ``` 
 
-En el grupo 3 puede verse que estan las personas mas pesadas de 5, 6 y 7 años, edades que tambien estan presente en el grupo 2. Luego se puede apreciar como las personas siguen aumentando de peso conforme van creciendo.
+En el grupo 3 puede verse que estan las personas mas pesadas de 5, 6 y 7 a?os, edades que tambien estan presente en el grupo 2. Luego se puede apreciar como las personas siguen aumentando de peso conforme van creciendo.
 
 ### Grupo 4
 
@@ -654,12 +665,12 @@ ggplot(g4, aes(group = age, x = age, y = Weight)) +
   labs(x = "Edad", y = "Peso (kg)")
 ``` 
 
-En el grupo 4 estan las personas mas pesadas de todas. desde niños hasta adultos.
+En el grupo 4 estan las personas mas pesadas de todas. desde ni?os hasta adultos.
 
 ## Conclusion de Cluster
 
 * La edad es una medida critica para entrar o no a los grupos.
-* Si eres un niño con peso y altura de un joven, el clustering te agrupará a ellos y viceversa.
+* Si eres un ni?o con peso y altura de un joven, el clustering te agrupar? a ellos y viceversa.
 * El grupo 1 es el unico grupo con mas mujeres.
 * En el grupo 4 hay hombres en su mayoria.
 * Los pliegues cutaneos varian de distintas maneras dentro de los grupos y no existe una diferencia representante entre el grupo 1 y 4.
