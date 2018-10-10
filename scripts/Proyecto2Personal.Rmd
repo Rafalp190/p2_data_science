@@ -1,43 +1,65 @@
 ---
-title: "Proyecto 2 (personal)"
-author: "Oliver Mazariegos"
+title: "Proyecto 2"
+author: "Oliver Mazariegos, Rafael Leon y Alejandro Vasquez"
 date: "18/8/2018"
 output: 
   html_document:
 
-    number_sections: true
+    number_sections: false
 
     toc: true
 
     fig_width: 8
 
     fig_height: 6
+    
+    self_contained: true
 
     theme: cosmo
 
     highlight: tango
 
-    code_folding: show
+    code_folding: hide
 ---
 
-# Situaci�n Problem�tica
 
-No se ha buscado la relaci�n entre habilidades cognitivas, crecimiento y salud de los huesos utilizando los datos del estudio longitudinal de la UVG y los estudios que se han realizado con datos parecidos no han sido bien investigados en pa�ses de bajos y medianos ingresos.  (Furlan.....)
+# Situacion Problematica
 
-# Problema Cientifico
+No se ha buscado la relacion entre habilidades cognitivas, crecimiento y salud de los huesos utilizando los datos del estudio longitudinal de la UVG y los estudios que se han realizado con datos parecidos no han sido bien investigados en paises de bajos y medianos ingresos.
 
+Los datos utilizados para este analisis son el producto de un estudio longitudinal dise?ado por el Dr. Barry Bogin hace mas de 50 años en conjunto con el Colegio Americano de Guatemala. Ellos se propusieron a colectar datos longitudinalmente de estudiantes de todos los a?os y darle seguimiento a su crecimiento de forma anual hasta el momento en el que completaban sus estudios de bachillerato.
+El estudio se expandio a 6 colegios m?s a lo largo de los años y se cuenta con datos de peso, talla, IQ, pruebas de lectura y masa osea para registros comenzando en el a?o 1953.
 
-## Objetivos
+Esta base de datos pertenece a la fundaci?n Bill and Melinda Gates, los cuales donaron los fondos necesarios para digitalizarla.
 
+# Problema Cientifico  
+
+Los niños del dataset escogido tienen una estatura menor a los niños de otros paises para los mismos grupos etarios. Se está buscando formas de extrapolar los datos de la base de datos a nivel nacional para poder utilizar macroindicadores para buscar una razón por la cual los niños de Guatemala son más pequeños.
+
+## Objetivos  
+### General
+
+* Diseñar un modelo predictivo para estatura y/o peso basado en los datos disponibles del estudio longitudinal del Dr. Bogin para poder tener datos representativos de la realidad nacional. 
+
+### Específicos
+ *  Realizar un analisis exploratorio de los datos para determinar la forma apropiada de diseñar
+ el modelo predictivo sugerido.
+ *  Diseñar un modelo predictivo para peso y/o talla
+ *  Probar distintos modelos predictivos diferentes para compararlos entre sí y escoger el mejor.
+ *  Realizar una limpieza general de los Datos a utilizar.
+ 
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(knitr)
-opts_knit$set(root.dir = "~/R")
 library(readxl)
 library(dplyr)
 library(Matrix)
 library(data.table)
+library(ggplot2)
+library(rela)
+library(psych)
+library(FactoMineR)
 ```
 
 # Conjunto de datos
@@ -45,157 +67,369 @@ library(data.table)
 ## Leyendo Datos
 
 * Subjects: Informacion personal de cada sujeto de prueba.
-* Card1: Informacion fisiol�gica de los sujetos.
-* Card2: Informacion fisiol�gica complementaria.
+* Card1: Informacion fisiol?gica de los sujetos.
+* Card2: Informacion fisiol?gica complementaria.
 
 ```{r lectura}
 
-subjects = as.data.table(read_xlsx("./data/1-Subjects sex_ID_school_DOB.xlsx"))
-card1 = as.data.table(read_xlsx("./data/4-Card1.xlsx"))
-card2 = as.data.table(read_xlsx("./data/5-Card2.xlsx"))
+subjects = as.data.table(read_xlsx(path = "../data/1-Subjects sex_ID_school_DOB.xlsx"))
+card1 = as.data.table(read_xlsx("../data/4-Card1.xlsx"))
+card2 = as.data.table(read_xlsx("../data/5-Card2.xlsx"))
 
 ```
+
+### Variables desechadas
+
+En las tres bases de datos existen registros de control de digitalizacion como.  
+
+* `entering date`: Fecha en la que los datos fueron digitalizados.
+* `User` : Usuario que digitaliz? el dato.
+
+Estas variables, por ser solo de control, junto a `Repetition` en `Card1` y `Card2`, que no esta presente en casi todo el conjunto de datos, seran desechadas.
+
+
+
+###  Subject
+
+En Subjects podemos encontrar las siguientes variables personales de cada sujeto de estudio.
+
+* `ID`: Identificador personal para cada persona involucrada en el set de datos.
+* `DOB`: Fecha de nacimiento de la persona.
+* `DOB decimal`: A?o de nacimiento de la persona en representacion decimal.
+* `Sex`: Sexo de la persona.
+* `IdSchool 1`: Identificador del colegio al que asisti? la persona.
+* `IdSchool 2`: Valor booleano que representa si el sujeto ya no estudia en el colegio representado en `IdSchool 1`
+
+### Card1
+
+En Card1 podemos encontrar las siguientes caracteristicas fisiologicas de los sujetos de observacion.  
+
+* `yearCard1`: A?o en el que se recopilaron los datos.
+* `gradeCard1`: Grado escolar al que pertenec?a la persona.
+* `Height`: Altura de la persona en centimetros.
+* `Weight`: Peso de la persona en kg.
+* `Hand grip`: Fuerza de la mano calculado en kg.
+* `Dental`: Dentici?n piezas del sujeto. N?mero de piezas permanentes eruptadas.
+
+### Card2
+
+En Card2 podemos encontrar las siguientes caracteristicas fisiologicas de los sujetos de observacion.  
+
+* `yearCard2`: A?o en el que se recopilaron los datos.
+* `grade Card 2`: Grado escolar al que pertenec?a la persona.
+* `UAC1`: Circunferencia Tricep 1
+* `UAC2`: Circunferencia Tricep 2
+* `TST1`: Pliegue Cut?neo Tricep 1
+* `TST2`: Pliegue Cut?neo Tricep 2
+* `SSF1`: Pliegue Cut?neo Subescapular 1
+* `SSF2`: Pliegue Cut?neo Subescapular 2
 
 ## Union y Limpieza de Datos
 
-Uniremos cada conjunto de datos con la informacion respectiva de cada sujeto de observacion. Para eso las uniremos basandonos en el ID.
+### Subject-Card1-Card2
 
-### Subject
+```{r S12, warning=F,message=F}
+mainData = subjects
+c1 = card1
+c2 = card2 
 
-`Subject` es el conjunto de datos que uniremos con los datos recopilados en `Card1` y `Card2`. La limpieza en este conjunto de datos sera tan simple como volver *Factores* las variables `Sex`, `IdSchool 1` y el `ID` del sujeto de observacion. Por otro lado desecharemos `IdSchool 2` que solo representa un valor booleano donde es `TRUE` si el estudiante cambio de colegio.
+colnames(mainData)[1] <- "Id"
+colnames(c1)[2] <- "date" 
+colnames(c2)[2] <- "date"
 
-```{r subject}
-subSubject = subjects[,c(1:5)]
-subSubject$Sex = as.factor(subSubject$Sex)
-subSubject$`IdSchool 1` = as.factor(subSubject$`IdSchool 1`)
-subSubject$ID = as.factor(subSubject$ID)
-```
-
-### Subject-Card1
-
-Uniremos `Card1` con `Subject` por medio del `ID`. Para poder combinar ambos conjuntos de datos realizaremos lo siguiente en `Card1`:  
-
-* Desecharemos las variables `entering date`, `User`, `RepetitionCard1`.
-* Renombraremos `Id` como `ID`.
-* Convertir a *factor* `ID`.
-* Convertir a *factor* `gradeCard1`.
-* Por ultimo combinamos ambos conjuntos de datos.
-
-
-```{r mergeC1}
-subCard1 = card1[,c(1:7)]
-names(subCard1)[1] = "ID"
-subCard1$ID = as.factor(subCard1$ID)
-subCard1$gradeCard1 = as.factor(subCard1$gradeCard1)
-Card1 = merge(subSubject,subCard1)
-Card1$edad = round(118-Card1$`DOB decimal`,0)
-
-```
-
-### Subject-Card2
-
-Uniremos `Card2` con `Subject` por medio del `ID`. Para poder combinar ambos conjuntos de datos realizaremos lo siguiente en `Card2`:  
-
-* Desecharemos las variables `entering date`, `User`, `Repetition`.
-* Renombraremos `Id` como `ID`.
-* Convertir a *factor* `ID`.
-* Convertir a *factor* `gradeCard2`.
-* Por ultimo combinamos ambos conjuntos de datos.
-
-```{r merge, echo=FALSE}
-subCard2 = card2[,c(1:9)]
-names(subCard2)[1] = "ID"
-subCard2$ID = as.factor(subCard2$ID)
-subCard2$`grade Card 2` = as.factor(subCard2$`grade Card 2`)
-Card2 = merge(subSubject,subCard2)
-Card2$edad = round(118-Card2$`DOB decimal`,0)
+cards <- merge(c1, c2, by = c("Id", "date"))
+completeData <- merge(mainData, cards, by = "Id")
+completeData$age <- round(completeData$date - completeData$`DOB decimal`, 0)
 ```
 
 # Analisis Exploratorio
 
+##Card1-Card2
 
-## Card1
+### Exploraci?n de variables y eliminacion de outlier
 
-### Descripcion de Variables
+#### Frecuencia de edades
 
-En Card1 podemos encontrar las siguientes caracteristicas fisiologicas de los sujetos de observacion.  
-
-* `ID`: Identificador personal para cada persona involucrada en el set de datos.
-* `DOB`: Fecha de nacimiento de la persona.
-* `DOB decimal`: A�o de nacimiento de la persona en representacion decimal.
-* `Sex`: Sexo de la persona.
-* `IdScholl 1`: Identificador del colegio al que asisti� la persona.
-* `yearCard1`: A�o en el que se recopilaron los datos.
-* `gradeCard1`: Grado escolar al que pertenec�a la persona.
-* `Height`: Altura de la persona en centimetros.
-* `Weight`: Peso de la persona en kg.
-* `Hand grip`: Fuerza de la mano calculado en kg.
-* `Dental`: 
-
-### Resumen de Variables
-
-```{r summaryC1}
-summary(Card1)
+```{r frecEdad, warning=F,message=F}
+ggplot(completeData, aes(x = age)) +
+  geom_bar() +
+  labs(x = "Edad", y = "Frecuencia")
 ```
 
-### Cruce de Variables
+#### Altura por Edad
 
-```{r cormatCard1}
-datos = Card1[,c(3:12)]
-datos$Sex = as.numeric(datos$Sex)
-datos$`IdSchool 1` = as.numeric(datos$`IdSchool 1`)
-datos$gradeCard1 = as.numeric(datos$gradeCard1)
+```{r alturaEdad, warning=F,message=F}
+ggplot(completeData, aes(group = age, x = age, y = Height)) +
+  geom_boxplot() +
+  labs(x = "Edad", y = "Altura (cm)")
+```
 
-#Obtener matriz de correlacion
-cormat = round(cor(datos,use = "complete.obs"),2)
-#Reordenar matriz de correlacion
-reorder_cormat <- function(cormat){
-# Use correlation between variables as distance
-dd <- as.dist((1-cormat)/2)
-hc <- hclust(dd)
-cormat <-cormat[hc$order, hc$order]
+Las alturas de m?s de 250 cm no tienen sentido. Adem?s, las edades mayores a 22 a?os tienen muy pocos datos. Se decidi? removerlos:
+
+
+```{r alturaEdadRem, warning=F,message=F}
+completeData <- completeData %>% 
+  filter(Height < 250) %>% 
+  filter(age < 23)
+```
+
+##### Sin outliers
+
+```{r boxplot_height2, warning=F,message=F}
+ggplot(completeData, aes(group = age, x = age, y = Height)) +
+  geom_boxplot() +
+  labs(x = "Edad", y = "Altura (cm)")
+```
+
+
+
+
+#### Pesos por Edades
+
+```{r boxplot_weight1, warning=F,message=F}
+ggplot(completeData, aes(group = age, x = age, y = Weight)) +
+  geom_boxplot() +
+  labs(x = "Edad", y = "Peso (kg)")
+```
+
+
+Pesos mayores a 200 kg no tienen sentidos. Se decidi? eliminarlos:
+
+```{r remoutWeight, warning=F,message=F}
+completeData <- completeData %>% 
+  filter(Weight < 200)
+```
+
+##### Sin outliers
+
+```{r boxplot_weight2, warning=F,message=F}
+ggplot(completeData, aes(group = age, x = age, y = Weight)) +
+  geom_boxplot() +
+  labs(x = "Edad", y = "Peso (kg)")
+```
+
+
+
+
+#### Regresion Lineal Peso-Altura
+
+```{r peso_altura, warning=F,message=F}
+for(i in 4:22){
+  temp <- completeData %>% 
+    filter(age == i)
+  
+  print(ggplot(temp, aes(x = Weight, y = Height)) + geom_point() + 
+           labs(x = "Peso (kg)", y = "Altura (cm)", title = paste(i, " anos")) +
+    geom_smooth(method = lm, se = F))
 }
-cormat = reorder_cormat(cormat)
-#Obtener triangulo superior
-get_upper_tri = function(cormat){
-  cormat[lower.tri(cormat)] = NA
-  return(cormat)
-}
-upper_tri = get_upper_tri(cormat)
-#Correlacion como heatmap
-require(reshape2)
-melted_cormat = melt(upper_tri, na.rm = T)
-require(ggplot2)
-ggheatmap = ggplot(data = melted_cormat, aes(x=Var1, y=Var2, fill = value)) + geom_tile(color = "white") + scale_fill_gradient2(low = "blue",high = "red",mid = "white", midpoint = 0, limit = c(-1,1), space = "Lab", name="Correlacion") + theme_minimal() + theme(axis.text.x = element_text(angle = 90, vjust = 1,hjust = 1)) + coord_fixed()
 
-ggheatmap + 
-geom_text(aes(Var2, Var1, label = value), color = "black", size = 4) +
-theme(
-  axis.title.x = element_blank(),
-  axis.title.y = element_blank(),
-  panel.grid.major = element_blank(),
-  panel.border = element_blank(),
-  panel.background = element_blank(),
-  axis.ticks = element_blank(),
-  legend.justification = c(1, 0),
-  legend.position = c(0.6, 0.7),
-  legend.direction = "horizontal")+
-  guides(fill = guide_colorbar(barwidth = 7, barheight = 1,
-                title.position = "top", title.hjust = 0.5))
+```
+
+Solo existen 4 datos para mediciones con cuatro y veintidos a?os de edad. Se eliminar?n:
+
+
+```{r rem_outliers2}
+completeData <- completeData %>% 
+  filter(age > 4) %>% 
+  filter(age < 22)
+```
+
+
+#### Altura-Dientes
+```{r , warning=F,message=F}
+ggplot(completeData, aes(group = Dental, x = Dental, y = Height)) +
+  geom_boxplot() +
+  labs(x = "N?mero de dientes", y = "Altura (cm)")
+```
+
+No tiene sentido que hayan ni?os tan altos sin dientes permanentes "erupcionados". Seg?n la Asociaci?n Dental de Am?rica, se espera que a partir de los 6-7 a?os por lo menos se hayan desarrollado los incisivos centrales. Probablemente esos "0"s signifiquen que no fue registrado el dato. Para comprobar cu?ntos registros de ni?os mayores a?os no tienen dientes permanentes "erupcionados":
+
+
+```{r check_teeth_age, warning=F,message=F}
+paste(round((nrow(filter(completeData, age > 7 & Dental == 0)) 
+             / nrow(completeData) * 100),2), "%")
+```
+
+M?s del 60% de los datos no tienen ese registro, por lo que no se utilizar? esta columna.
+
+```{r remove_Dental, warning=F,message=F}
+completeData <- completeData %>% 
+  mutate(Dental = NULL)
+```
+
+
+#### IdSchool | Repetition | RepetitionCard1
+
+IdSchool2, que indica si se cambiaron de colegio parece tener muchos NAs. Chequear:
+
+```{r check_idschool2, warning=F,message=F}
+paste(round(nrow(filter(completeData, is.na(`IdSchool 2`))) / 
+              nrow(completeData) * 100, 2), "%")
+```
+
+Casi el 100% de los registros no poseen esta informaci?n. Se eliminar? esta columna. Adem?s, se eliminar?n las columnas *Repetition* y *RepetitionCard1* ya que estas proveen poca informaci?n acerca de la altura. Es m?s, los alumnos repitentes podr?an distorsionar las predicciones.
+
+```{r remove_idschool2_repetitions}
+
+
+completeData <- completeData %>% 
+  mutate(`IdSchool 2` = NULL) %>% 
+  mutate(Repetition = NULL) %>% 
+  mutate(RepetitionCard1 = NULL)
+
+```
+
+
+
+#### Fuerza de Agarre (Hand grip)
+
+Visualizar los datos de pruebas de fuerza de agarre:
+
+```{r hand_grip, warning=F,message=F}
+ggplot(completeData, aes(y = `Hand grip`, x = age, group = age)) +
+  geom_boxplot() +
+  labs(y = "fuerza de agarre (kg)", x = "Edad (a?os)")
+```
+
+No existen registros de pruebas de fuerza de agarre en los que se superen los 100 kg de fuerza de agarre, por lo que se eliminar?n los outliers y se vuelve a graficar: 
+
+```{r remove_handgrip_outliers, warning=F,message=F}
+completeData <- completeData %>% 
+  filter(`Hand grip` < 100)
+```
+
+##### Sin outliers
+
+```{r hand_grip2, warning=F,message=F}
+ggplot(completeData, aes(y = `Hand grip`, x = age, group = age)) +
+  geom_boxplot() +
+  labs(y = "fuerza de agarre (kg)", x = "Edad (a?os)")
+```
+
+#### Fuerza de Agarre-Edad
+
+```{r plot_handgrip_by_age, warning=F,message=F}
+
+for(i in 5:21){
+  temp <- completeData %>% 
+    filter(age == i)
+  
+  print(ggplot(temp, aes(x = `Hand grip`)) + 
+          geom_bar() + 
+           labs(y = "Frecuencia", 
+                x = "fuerza de agarre (kg)", 
+                title = paste(i, " a?os")
+                )
+  )
+}
+
 
 
 ```
 
-### Grafico Exploratorios
+La fuerza de agarre presenta una distribuci?n aparentemente normal desde los 5 hasta los 14 a?os. Sin embargo, a partir de los 15 a?os y sobre todo entre los 17 y 19 a?os, se pueden observar claramente dos distribuciones que se traslapan. Esto indica que en estas edades la diferencia de fuerza de agarre es mucho m?s marcada entre dos grupos que no se encuentran diferenciados. 
+
+Probando agrupar por sexo:
 
 
-### Cluster
+```{r plot_handgrip_by_age_sex, echo=FALSE}
 
-```{r codoC1}
+for(i in 5:21){
+  temp <- completeData %>% 
+    filter(age == i)
+  
+  print(ggplot(temp, aes(x = `Hand grip`, fill = Sex)) + 
+          geom_bar() + 
+           labs(y = "Frecuencia", 
+                x = "fuerza de agarre (kg)", 
+                title = paste(i, " a?os")
+                )
+  )
+}
 
-cluster = datos
 
-set.seed(90)
+
+```
+
+Se observa claramente que a partir de los 15 a?os, los hombres tienen una distribuci?n normal (aparentemente) con una media de fuerza de agarre mayor al de las mujeres. Por lo tanto, debemos considerarlos como dos grupos claramente distintos a partir de esa edad.
+
+
+
+
+
+### Desecho de Variables
+
+Se eliminar?n otras variables poco ?tiles como *entering date*, *entering data* y *User*. Tambi?n se eliminar?n *DOB* y *DOB decimal* debido a que ya se calcul? la edad en cada registro.
+
+```{r remove_trash, warning=F,message=F}
+
+completeData <- completeData %>% 
+  mutate(`entering date` = NULL) %>% 
+  mutate(`entering data` = NULL) %>% 
+  mutate(User.x = NULL) %>% 
+  mutate(User.y = NULL) %>% 
+  mutate(DOB = NULL) %>% 
+  mutate(`DOB decimal` = NULL)
+
+```
+# Analis?s de Componentes Principales
+
+Se evalur? la factibilidad de realizar un an?lisis de componentes principales utilizando la base de datos unificada del estudio.
+
+```{r PCA_preview, warning=F,message=F}
+pafDatos<-paf(as.matrix(completeData[,5:16]))
+pafDatos$KMO
+pafDatos$Bartlett
+summary(pafDatos)
+cortest.bartlett(completeData[,5:16])
+```
+
+Como se puede observar se obtuvo un KMO de *0.86* y un coeficiente de Bartlett muy elevado *2421661* por lo que parece que un analisis de componentes principales es una buena idea. Considerando que el valor P indicado es de 0. 
+
+## Matriz de Correlaci?n
+
+```{r corrmat_pca, warning=F,message=F}
+kable(cor(completeData[,5:16],use = "pairwise.complete.obs"))
+```
+
+En la matriz de correlaci?n observamos que algunas variables se encuentran relacionadas por lo que se proceder? a realizar el analisis de componentes principales para intentar reducir el dataset.
+
+```{r pc, warning=F,message=F}
+compPrinc<-prcomp(completeData[,5:16], scale = T)
+compPrinc
+summary(compPrinc)
+
+
+```
+
+```{r pca, warning=F,message=F}
+compPrincPCA<-PCA(completeData[,5:16],ncp=ncol(completeData[,5:16]), scale.unit = T)
+```
+
+Al realizar el análisis de componentes principales observamos que realmente no se redujo el dataset de ninguna forma al evaluar los componentes principales. Los indicadores utilizados como KMO y Bartlett parecen indicar que se puede realizar un análisis de componentes principales pero como se puede observar en las comunalidades la mayoría de las variables seleccionadas para el análisis del PCA explican su variabilidad correctamente. Por lo que realizar un análisis de componentes principales solo reordena las variables de la más variable a la menos variable. Esto es innecesario por lo que no se realizará análisis de componentes principales y se trabajará con las variables del set de datos tal y como están.
+
+
+
+
+
+# Cluster
+
+Ahora que hemos unido ambos Cards, eliminado outliers y desechado variables innecesari, nuestro conjunto de datos est? listo para entrar a un analisis de Clustering.
+
+## Diagrama de Codo
+
+Antes de agrupar los datos, necesitamos averiguar cual es la cantidad optima de grupos.  Para averiguar este numero, utilizaremos el diagrama de codo del metodo de Ward.
+
+```{r codoComplete, warning=F,message=F}
+library(factoextra)
+library(cluster)
+
+cluster = completeData[,c('Sex','gradeCard1','Height','Weight','Hand grip','UAC1 cm','TST1 mm','SSF1 mm','age')]
+cluster$Sex = as.factor(cluster$Sex)
+cluster$Sex = as.numeric(cluster$Sex)
+
+set.seed(12)
+
 wss <- (nrow(cluster[,c()])-1)*sum(apply(cluster[,1:ncol(cluster)],2,var))
 
 for (i in 2:10) 
@@ -206,113 +440,277 @@ plot(2:
 
 ```
 
-```{r clusterC1}
+## Creacion de Cluster
+
+Con ayuda del diagrama de codo, definiremos 4 como la cantidad de clusters a realizar. Utilizaremos la tecnica de k-medias para crear los grupos.
+
+```{r clusterComplet, warning=F,message=F}
 require("fpc")
+library(cluster)
 set.seed(90)
-km = kmeans(cluster, 6)
+km = kmeans(cluster, 4)
 cluster$grupo<-km$cluster
+completeData$grupo = km$cluster
 
-plotcluster(cluster[,c(1:10)],cluster$grupo)
-```
+g1 = completeData[cluster$grupo == 1,]
+g2 = completeData[cluster$grupo == 2,]
+g3 = completeData[cluster$grupo == 3,]
+g4 = completeData[cluster$grupo == 4,]
 
-
-### An�lisis de Componentes Principales
-
-
-## Card2
-
-### Descripcion de Variables
-
-
-
-### Resumen de Variables
-
-```{r summaryC2}
-summary(Card2)
-```
-
-### Cruce de Variables
-
-```{r cormatCard2}
-datos2 = Card2[,c(3:14)]
-datos2$Sex = as.numeric(datos2$Sex)
-datos2$`IdSchool 1` = as.numeric(datos2$`IdSchool 1`)
-datos2$`grade Card 2` = as.numeric(datos2$`grade Card 2`)
-
-#Obtener matriz de correlacion
-cormat = round(cor(datos2,use = "complete.obs"),2)
-#Reordenar matriz de correlacion
-reorder_cormat <- function(cormat){
-# Use correlation between variables as distance
-dd <- as.dist((1-cormat)/2)
-hc <- hclust(dd)
-cormat <-cormat[hc$order, hc$order]
-}
-cormat = reorder_cormat(cormat)
-#Obtener triangulo superior
-get_upper_tri = function(cormat){
-  cormat[lower.tri(cormat)] = NA
-  return(cormat)
-}
-upper_tri = get_upper_tri(cormat)
-#Correlacion como heatmap
-require(reshape2)
-melted_cormat = melt(upper_tri, na.rm = T)
-require(ggplot2)
-ggheatmap = ggplot(data = melted_cormat, aes(x=Var1, y=Var2, fill = value)) + geom_tile(color = "white") + scale_fill_gradient2(low = "blue",high = "red",mid = "white", midpoint = 0, limit = c(-1,1), space = "Lab", name="Correlacion") + theme_minimal() + theme(axis.text.x = element_text(angle = 90, vjust = 1,hjust = 1)) + coord_fixed()
-
-ggheatmap + 
-geom_text(aes(Var2, Var1, label = value), color = "black", size = 4) +
-theme(
-  axis.title.x = element_blank(),
-  axis.title.y = element_blank(),
-  panel.grid.major = element_blank(),
-  panel.border = element_blank(),
-  panel.background = element_blank(),
-  axis.ticks = element_blank(),
-  legend.justification = c(1, 0),
-  legend.position = c(0.6, 0.7),
-  legend.direction = "horizontal")+
-  guides(fill = guide_colorbar(barwidth = 7, barheight = 1,
-                title.position = "top", title.hjust = 0.5))
-
-
+plotcluster(cluster[,c(1:9)],cluster$grupo)
 
 ```
 
-### Grafico Exploratorios
 
+## Analisis Express {.tabset .tabset-fade}
 
-### Cluster
+Ahora que ya tenemos los distintos grupos, hagamos un rapido analisis sobre las distribuciones de cada variable dentro de los grupos
 
-```{r codo2}
+### Edad
 
-cluster = datos2
-
-wss <- (nrow(cluster[,c()])-1)*sum(apply(cluster[,1:ncol(cluster)],2,var))
-
-for (i in 2:10) 
-  wss[i] <- sum(kmeans(cluster[,1:ncol(cluster)], centers=i)$withinss)
-
-plot(2:
-       10, wss[c(2:10)], type="b", xlab="Number of Cluster",  ylab="Squares Summatory", main = "Diagrama de Codo")
-
-
+```{r edadCC, warning=F,message=F}
+ggplot(data = completeData, aes(group = grupo, y = age, fill = factor(grupo))) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("Edad") + ylim(c(0,25))
 ```
 
-```{r cluster2}
+Podemos ver que esta bastante definido que los grupos estan muy bien definidos conforme a la edad de las personas. Aun asi, notese que en cada grupo la media esta bastante centrada en los boxplots excepto por el primer grupo.
 
-set.seed(90)
-km<-kmeans(cluster,7)
-km2 = kmeans(cluster, 6)
-cluster$grupo<-km$cluster
-cluster$grupo2<-km2$cluster
+### Altura
 
-plotcluster(cluster,km$cluster)
+```{r alturaCC, warning=F,message=F}
+ggplot(data = completeData, aes(group = grupo, y = Height, fill = factor(grupo))) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("Altura (cm)") + ylim(c(100,200))
 ```
 
-### An�lisis de Componentes Principales
+En la altura se ve un comportamiento muy similar con la edad, lo unico curioso es que aqui si se observa que las alturas medias estan bastante centradas dentro de los boxplots.
 
+### Peso
 
-# Conclusiones
+```{r pesoCC, warning=F,message=F}
+ggplot(data = completeData, aes(group = grupo, y = Weight, fill = factor(grupo))) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("Peso (kg)") + ylim(c(0,100))
+```
 
+En el peso podemos ver el mismo comportamiento analizado anteriormente. Pero a diferencia de la edad y la altura, pareciera que el peso var?a de forma distinta dentro de cada grupos.
+
+### Hand grip
+
+```{r Handgrip, warning=F,message=F}
+ggplot(data = completeData, aes(group = grupo, y = `Hand grip`, fill = factor(grupo))) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("Hand grip") + ylim(c(0,70))
+```
+
+En la fuerza de la mano tambien tiene el mismo comportamiento que los anteriores, pero se puede ver que el mismo varia mucho mas en el grupo 4, que es el grupo con las personas mas adultas.
+
+### Grade 
+
+```{r gradeCC, warning=F,message=F}
+ggplot(data = completeData, aes(group = grupo, y = gradeCard1, fill = factor(grupo))) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("Grado Escolar")
+```
+
+Nuevamente el patron es notable. La forma del boxplot del primero grupo puede ser devido a que los estudios primarios llegan hasta el numero **16** y los secundarios empiezan en **21**. Podria decirse que aqui se encuntran las personas en estudios basicos. En el segundo grupo estan los grados mas peque?os, podriamos llamarlos el primer ciclo primario. En el tercer grupo estan los del segundo ciclo primario y en el cuarto grupo estan los bachilleres.
+
+### UAC (circunferencia del tricep)
+
+```{r UACCC, warning=F,message=F}
+ggplot(data = completeData, aes(group = grupo, y = `UAC1 cm`, fill = factor(grupo))) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("UAC1 cm") + ylim(c(10,40))
+```
+
+En la circuferencia de los triceps tambien siguen el patron encontrado, lo cual tiene sentido ya que los musculos tambien crecen conforme la edad.
+
+### TST (pliegue cutaneo tricep)
+
+```{r TSTCC, warning=F,message=F}
+ggplot(data = completeData, aes(group = grupo, y = `TST1 mm`, fill = factor(grupo))) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("TST1 mm") + ylim(c(0,35))
+```
+
+La variabilidad en el pliege cutaneo de los triceps es muy desigual entre los grupos, y muchos de los grupos comparten similitudes en los datos. Curiosamente estos boxplots no coinciden con los patrones entre grupos encontrados anteriormente.
+
+### SSF (pliege cutaneo subescapular)
+
+```{r boxplotsCC, warning=F,message=F}
+ggplot(data = completeData, aes(group = grupo, y = `SSF1 mm`, fill = factor(grupo))) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("SSF1 mm") + ylim(c(0,35))
+```
+
+En el pliegue subescapular pareciera que siguen el patron encontrado anteriormete. Pero el primer grupo y el cuarto son muy similares, aunque la media del primer grupo est? por arriba de la media del cuarto. Sera esto debido a la cantidad de hombres y mujeres dentro del grupo?
+
+## Genero {.tabset .tabset-fade}
+
+### Grupo 1
+
+```{r generoCC1, warning=F,message=F}
+barplot(prop.table(table(g1$Sex)))
+```
+
+En el grupo 1 hay alrededor de un 20% mas mujeres que hombres.
+
+### Grupo 2
+
+```{r generoCC2, warning=F,message=F}
+barplot(prop.table(table(g2$Sex)))
+```
+
+En el grupo 2 hay alrededor de 10% mas hombres que mujeres.
+
+### Grupo 3
+
+```{r generoCC3, warning=F,message=F}
+barplot(prop.table(table(g3$Sex)))
+```
+
+En el grupo 3 hay alrededor de 20% mas hombres que mujeres.
+
+### Grupo 4
+
+```{r generoCC4, warning=F,message=F}
+barplot(prop.table(table(g4$Sex)))
+```
+
+En el grupo 4, en su mayoria son hombres. Esto podria dar lugar al porque en el grupo 1 se encuentran mas mujeres que hombres. 
+
+## Altura-Edad {.tabset .tabset-fade}
+
+### Grupo 1
+
+```{r altura-edad1, warning=F,message=F}
+ggplot(g1, aes(group = age, x = age, y = Height)) +
+  geom_boxplot() +
+  labs(x = "Edad", y = "Altura (cm)")
+```
+
+Se puede ver que en el grupo 1 el aumento que las alturas mayores sen encuentran entre los 15 y 16 con alturas promedio de 155cm. Esto puede ser debido a la gran cantidad de mujeres presentes en el grupo.
+
+### Grupo 2
+
+```{r altura-edad2, warning=F,message=F}
+ggplot(g2, aes(group = age, x = age, y = Height)) +
+  geom_boxplot() +
+  labs(x = "Edad", y = "Altura (cm)")
+```
+
+En el grupo 2 estan las personas mas juvenes, se puede ver como cambia drasticamente la altura en los ni?os y se empieza a estabilizar a los 10 a?os.
+
+### Grupo 3
+
+```{r altura-eda3, warning=F,message=F}
+ggplot(g3, aes(group = age, x = age, y = Height)) +
+  geom_boxplot() +
+  labs(x = "Edad", y = "Altura (cm)")
+```
+
+En el grupo 3 se puede observar como las personas estan entrando a la adolescencia y empiezan a tener cambios drasticos en la altura entre los 11 y 14 a?os.
+
+### Grupo 4
+
+```{r altura-edad4, warning=F,message=F}
+ggplot(g4, aes(group = age, x = age, y = Height)) +
+  geom_boxplot() +
+  labs(x = "Edad", y = "Altura (cm)")
+```
+
+En el grupo 4 tenemos a las personas mas altas de todo el conjunto de datos.
+
+## Hand Grip-Edad {.tabset .tabset-fade}
+
+### Grupo 1
+
+```{r HGCC1, warning=F,message=F}
+ggplot(g1, aes(y = `Hand grip`, x = age, group = age)) +
+  geom_boxplot() +
+  labs(y = "fuerza de agarre (kg)", x = "Edad (anos)")
+``` 
+
+En el grupo 1, el de los jovenes, se ve que obtienen mas fuerza entre mas crecen, pero la fuerza deja de aumentar considerablemente despues de los 15 a?os, esto puede ser debido a la alta cantidad de mujeres, suponiendo que las mujeres tienen menos fuerza en las manos que los hombres.
+
+### Grupo 2
+
+```{r HGCC2, warning=F,message=F}
+ggplot(g2, aes(y = `Hand grip`, x = age, group = age)) +
+  geom_boxplot() +
+  labs(y = "fuerza de agarre (kg)", x = "Edad (anos)")
+``` 
+
+En el grupo 2 estan las personas mas debiles, se puede ver como su fuerza va en promedio de 6 a 12 kg de fuerza de agarre
+
+### Grupo 3
+
+```{r HGCC3, warning=F,message=F}
+ggplot(g3, aes(y = `Hand grip`, x = age, group = age)) +
+  geom_boxplot() +
+  labs(y = "fuerza de agarre (kg)", x = "Edad (anos)")
+``` 
+
+En el grupo 3 se ve como las personas van obteniendo mas fuerza conforme crecen y dejan de ser ni?os
+
+### Grupo 4
+
+```{r HGCC4, warning=F,message=F}
+ggplot(g4, aes(y = `Hand grip`, x = age, group = age)) +
+  geom_boxplot() +
+  labs(y = "fuerza de agarre (kg)", x = "Edad (anos)")
+``` 
+
+En el grupo 4 se encuentran las personas mas fuertes, mas adultas y en su mayoria hombres. Se puede apreciar tambien las grandes variaciones que se encuentran, lo cual contrasta lo analizado en la exploracion anterior, en la cual se concluyo que en altas edades hay bastantes personas debiles como personas fuertes.
+
+## Peso-Edad {.tabset .tabset-fade}
+
+### Grupo 1
+
+```{r WeightCC1, warning=F,message=F}
+ggplot(g1, aes(group = age, x = age, y = Weight)) +
+  geom_boxplot() +
+  labs(x = "Edad", y = "Peso (kg)")
+```  
+
+En el grupo 1 podemos ver que el promedio de peso cae levemente durante la epoca de pubertad pero se mantiene bastante constante. En lo que se observa cambio es en la variabilidad de los pesos. Los peso promedio esta por los 50 kg.
+
+### Grupo 2
+
+```{r WeightCC2, warning=F,message=F}
+ggplot(g2, aes(group = age, x = age, y = Weight)) +
+  geom_boxplot() +
+  labs(x = "Edad", y = "Peso (kg)")
+``` 
+
+En el grupo 2 se ve como los ni?os aumentan de peso gradualmente durante su crecimiento. Aqui se encuentran las personas menos pesadas.
+
+### Grupo 3
+
+```{r WeightCC3, warning=F,message=F}
+ggplot(g3, aes(group = age, x = age, y = Weight)) +
+  geom_boxplot() +
+  labs(x = "Edad", y = "Peso (kg)")
+``` 
+
+En el grupo 3 puede verse que estan las personas mas pesadas de 5, 6 y 7 a?os, edades que tambien estan presente en el grupo 2. Luego se puede apreciar como las personas siguen aumentando de peso conforme van creciendo.
+
+### Grupo 4
+
+```{r WeightCC4, warning=F,message=F}
+
+ggplot(g4, aes(group = age, x = age, y = Weight)) +
+  geom_boxplot() +
+  labs(x = "Edad", y = "Peso (kg)")
+``` 
+
+En el grupo 4 estan las personas mas pesadas de todas. desde ni?os hasta adultos.
+
+## Conclusion de Cluster
+
+* La edad es una medida critica para entrar o no a los grupos.
+* Si eres un niño con peso y altura de un joven, el clustering te agrupar? a ellos y viceversa.
+* El grupo 1 es el unico grupo con mas mujeres.
+* En el grupo 4 hay hombres en su mayoria.
+* Los pliegues cutaneos varian de distintas maneras dentro de los grupos y no existe una diferencia representante entre el grupo 1 y 4.
+
+# Prediciendo Peso
+
+## RLM
+
+### Matriz de Correlacion
+
+### Modelo
+
+### Analisis de Residuos
+
+### Conclusión
+
+## Regrision Logaritmica
+
+## Red Neuronal

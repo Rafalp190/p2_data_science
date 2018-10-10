@@ -23,12 +23,12 @@ output:
 ---
 
 
-# Situaci?n Problem?tica
+# Situacion Problematica
 
 No se ha buscado la relacion entre habilidades cognitivas, crecimiento y salud de los huesos utilizando los datos del estudio longitudinal de la UVG y los estudios que se han realizado con datos parecidos no han sido bien investigados en paises de bajos y medianos ingresos.
 
-Los datos utilizados para este analisis son el producto de un estudio longitudinal dise?ado por el Dr. Barry Bogin hace mas de 50 a?os en conjunto con el Colegio Americano de Guatemala. Ellos se propusieron a colectar datos longitudinalmente de estudiantes de todos los a?os y darle seguimiento a su crecimiento de forma anual hasta el momento en el que completaban sus estudios de bachillerato.
-El estudio se expandi? a 6 colegios m?s a lo largo de los a?os y se cuenta con datos de peso, talla, IQ, pruebas de lectura y masa osea para registros comenzando en el a?o 1953.
+Los datos utilizados para este analisis son el producto de un estudio longitudinal dise?ado por el Dr. Barry Bogin hace mas de 50 aÃ±os en conjunto con el Colegio Americano de Guatemala. Ellos se propusieron a colectar datos longitudinalmente de estudiantes de todos los a?os y darle seguimiento a su crecimiento de forma anual hasta el momento en el que completaban sus estudios de bachillerato.
+El estudio se expandio a 6 colegios m?s a lo largo de los aÃ±os y se cuenta con datos de peso, talla, IQ, pruebas de lectura y masa osea para registros comenzando en el a?o 1953.
 
 Esta base de datos pertenece a la fundaci?n Bill and Melinda Gates, los cuales donaron los fondos necesarios para digitalizarla.
 
@@ -52,7 +52,6 @@ Los niÃ±os del dataset escogido tienen una estatura menor a los niÃ±os de otros 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(knitr)
-#opts_knit$set(root.dir = "~/R")
 library(readxl)
 library(dplyr)
 library(Matrix)
@@ -73,9 +72,9 @@ library(FactoMineR)
 
 ```{r lectura}
 
-subjects = as.data.table(read_xlsx("./data/1-Subjects sex_ID_school_DOB.xlsx"))
-card1 = as.data.table(read_xlsx("./data/4-Card1.xlsx"))
-card2 = as.data.table(read_xlsx("./data/5-Card2.xlsx"))
+subjects = as.data.table(read_xlsx(path = "../data/1-Subjects sex_ID_school_DOB.xlsx"))
+card1 = as.data.table(read_xlsx("../data/4-Card1.xlsx"))
+card2 = as.data.table(read_xlsx("../data/5-Card2.xlsx"))
 
 ```
 
@@ -226,7 +225,7 @@ for(i in 4:22){
 
 ```
 
-Solo existen 4 datos para mediciones con cuatro y veintidos años de edad. Se eliminarán:
+Solo existen 4 datos para mediciones con cuatro y veintidos a?os de edad. Se eliminar?n:
 
 
 ```{r rem_outliers2}
@@ -328,7 +327,7 @@ for(i in 5:21){
 
 ```
 
-La fuerza de agarre presenta una distribución aparentemente normal desde los 5 hasta los 14 años. Sin embargo, a partir de los 15 años y sobre todo entre los 17 y 19 años, se pueden observar claramente dos distribuciones que se traslapan. Esto indica que en estas edades la diferencia de fuerza de agarre es mucho más marcada entre dos grupos que no se encuentran diferenciados. 
+La fuerza de agarre presenta una distribuci?n aparentemente normal desde los 5 hasta los 14 a?os. Sin embargo, a partir de los 15 a?os y sobre todo entre los 17 y 19 a?os, se pueden observar claramente dos distribuciones que se traslapan. Esto indica que en estas edades la diferencia de fuerza de agarre es mucho m?s marcada entre dos grupos que no se encuentran diferenciados. 
 
 Probando agrupar por sexo:
 
@@ -343,7 +342,7 @@ for(i in 5:21){
           geom_bar() + 
            labs(y = "Frecuencia", 
                 x = "fuerza de agarre (kg)", 
-                title = paste(i, " años")
+                title = paste(i, " a?os")
                 )
   )
 }
@@ -352,7 +351,7 @@ for(i in 5:21){
 
 ```
 
-Se observa claramente que a partir de los 15 años, los hombres tienen una distribución normal (aparentemente) con una media de fuerza de agarre mayor al de las mujeres. Por lo tanto, debemos considerarlos como dos grupos claramente distintos a partir de esa edad.
+Se observa claramente que a partir de los 15 a?os, los hombres tienen una distribuci?n normal (aparentemente) con una media de fuerza de agarre mayor al de las mujeres. Por lo tanto, debemos considerarlos como dos grupos claramente distintos a partir de esa edad.
 
 
 
@@ -695,7 +694,23 @@ En el grupo 4 estan las personas mas pesadas de todas. desde ni?os hasta adultos
 ## Conclusion de Cluster
 
 * La edad es una medida critica para entrar o no a los grupos.
-* Si eres un ni?o con peso y altura de un joven, el clustering te agrupar? a ellos y viceversa.
+* Si eres un niÃ±o con peso y altura de un joven, el clustering te agrupar? a ellos y viceversa.
 * El grupo 1 es el unico grupo con mas mujeres.
 * En el grupo 4 hay hombres en su mayoria.
 * Los pliegues cutaneos varian de distintas maneras dentro de los grupos y no existe una diferencia representante entre el grupo 1 y 4.
+
+# Prediciendo Peso
+
+## RLM
+
+### Matriz de Correlacion
+
+### Modelo
+
+### Analisis de Residuos
+
+### ConclusiÃ³n
+
+## Regrision Logaritmica
+
+## Red Neuronal
