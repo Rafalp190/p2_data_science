@@ -701,9 +701,115 @@ En el grupo 4 estan las personas mas pesadas de todas. desde ni?os hasta adultos
 
 # Prediciendo Peso
 
+De primero removeremos las columnas que indispensables encontradas en el analisis exploratorio (`Id`, `grade Card 2`, `UAC2`, `TST2`, `SSF2` ).
+
+```{r filtrandoColumnas}
+completeData = completeData[,c("Sex","IdSchool 1","gradeCard1","Height","Weight","Hand grip","UAC1 cm","TST1 mm","SSF1 mm","age","grupo")]
+colnames(completeData) = c("sex","school","grade","height","weight","hand_grip","UAC","TST","SSF","age")
+
+head(completeData)
+```
+
+Se redujo la cantidad de variables y se renombraron para facilidad del analista.
+
 ## RLM
 
 ### Matriz de Correlacion
+
+```{r cormatRLM}
+
+ datos = completeData
+ datos$sex = as.factor(datos$sex)
+ datos$sex = as.numeric(datos$sex)
+
+ 
+ #Obtener matriz de correlacion
+ cormat = round(cor(datos,use = "complete.obs"),2)
+ #Reordenar matriz de correlacion
+ reorder_cormat <- function(cormat){
+ # Use correlation between variables as distance
+ dd <- as.dist((1-cormat)/2)
+ hc <- hclust(dd)
+ cormat <-cormat[hc$order, hc$order]
+ }
+ cormat = reorder_cormat(cormat)
+ #Obtener triangulo superior
+ get_upper_tri = function(cormat){
+   cormat[lower.tri(cormat)] = NA
+   return(cormat)
+ }
+ upper_tri = get_upper_tri(cormat)
+ #Correlacion como heatmap
+ require(reshape2)
+ melted_cormat = melt(upper_tri, na.rm = T)
+ require(ggplot2)
+ ggheatmap = ggplot(data = melted_cormat, aes(x=Var1, y=Var2, fill = value)) + geom_tile(color = "white") + scale_fill_gradient2(low = "blue",high = "red",mid = "white", midpoint = 0, limit = c(-1,1), space = "Lab", name="Correlacion") + theme_minimal() + theme(axis.text.x = element_text(angle = 90, vjust = 1,hjust = 1)) + coord_fixed()
+ 
+ ggheatmap + 
+ geom_text(aes(Var2, Var1, label = value), color = "black", size = 4) +
+ theme(
+   axis.title.x = element_blank(),
+   axis.title.y = element_blank(),
+   panel.grid.major = element_blank(),
+   panel.border = element_blank(),
+   panel.background = element_blank(),
+   axis.ticks = element_blank(),
+   legend.justification = c(1, 0),
+   legend.position = c(0.6, 0.7),
+   legend.direction = "horizontal")+
+   guides(fill = guide_colorbar(barwidth = 7, barheight = 1,
+                 title.position = "top", title.hjust = 0.5))
+ 
+
+```
+
+Se puede ver que nuestras variables fisicas de los individuos se relacionan bastante bien. Las variables en las cuales no se nota una relacion con cualquier otra son `sex` y `school`. Eliminemoslas y corramos el mismo analisis.
+
+```{r cormatRLM2}
+
+ datos = datos[,c("grade","height","weight","hand_grip","UAC","TST","SSF","age")]
+
+ 
+ #Obtener matriz de correlacion
+ cormat = round(cor(datos,use = "complete.obs"),2)
+ #Reordenar matriz de correlacion
+ reorder_cormat <- function(cormat){
+ # Use correlation between variables as distance
+ dd <- as.dist((1-cormat)/2)
+ hc <- hclust(dd)
+ cormat <-cormat[hc$order, hc$order]
+ }
+ cormat = reorder_cormat(cormat)
+ #Obtener triangulo superior
+ get_upper_tri = function(cormat){
+   cormat[lower.tri(cormat)] = NA
+   return(cormat)
+ }
+ upper_tri = get_upper_tri(cormat)
+ #Correlacion como heatmap
+ require(reshape2)
+ melted_cormat = melt(upper_tri, na.rm = T)
+ require(ggplot2)
+ ggheatmap = ggplot(data = melted_cormat, aes(x=Var1, y=Var2, fill = value)) + geom_tile(color = "white") + scale_fill_gradient2(low = "blue",high = "red",mid = "white", midpoint = 0, limit = c(-1,1), space = "Lab", name="Correlacion") + theme_minimal() + theme(axis.text.x = element_text(angle = 90, vjust = 1,hjust = 1)) + coord_fixed()
+ 
+ ggheatmap + 
+ geom_text(aes(Var2, Var1, label = value), color = "black", size = 4) +
+ theme(
+   axis.title.x = element_blank(),
+   axis.title.y = element_blank(),
+   panel.grid.major = element_blank(),
+   panel.border = element_blank(),
+   panel.background = element_blank(),
+   axis.ticks = element_blank(),
+   legend.justification = c(1, 0),
+   legend.position = c(0.6, 0.7),
+   legend.direction = "horizontal")+
+   guides(fill = guide_colorbar(barwidth = 7, barheight = 1,
+                 title.position = "top", title.hjust = 0.5))
+ 
+
+```
+
 
 ### Modelo
 
