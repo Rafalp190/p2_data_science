@@ -861,7 +861,36 @@ Entre `TST` Y `SSF` existe una relacion del 82%, se escogera a `SSF` para el mod
 
 ### Modelo
 
-### Analisis de Residuos
+Para realizar el modelo, utilizaremos una muestra aleatoria del 70% de los datos para entrenar el modelo y utilizaremos el 30% restante para probarlo.
+
+```{r RLM}
+set.seed(12)
+
+RLMmodel = lm(weight~., data = datos)
+
+summary(RLMmodel)
+```
+
+
+SE puede ver que ahora todas las variables aportan significativamente al modelo. El siguiente paso es realizr un analisis de residuos para validar el modelo.
+
+### Analisis de Residuos{.tabset .tabset-fade}
+
+#### Normalidad del Error
+
+```{r calculoderesiduos}
+par(mfrow=c(1,1))
+plot(RLMmodel, which = 2)
+hist(RLMmodel$residuals, col = 'cyan', xlab = "Histograma de los Residuos")
+```
+
+
+
+#### Varianza constante e independencia
+
+```{r varianzaConstante}
+plot(RLMmodel, which = 1)
+```
 
 ### Conclusión
 
