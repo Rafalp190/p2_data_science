@@ -705,11 +705,192 @@ En el grupo 4 estan las personas mas pesadas de todas. desde ni?os hasta adultos
 
 ### Matriz de Correlacion
 
+Antes de realizar un modelo linal multiple, hay que ver como se relacionan las variables entre ellas.
+
+```{r cormatRLM}
+
+ datos = completeData
+ datos$sex = as.factor(datos$sex)
+ datos$sex = as.numeric(datos$sex)
+
+ 
+ #Obtener matriz de correlacion
+ cormat = round(cor(datos,use = "complete.obs"),2)
+ #Reordenar matriz de correlacion
+ reorder_cormat <- function(cormat){
+ # Use correlation between variables as distance
+ dd <- as.dist((1-cormat)/2)
+ hc <- hclust(dd)
+ cormat <-cormat[hc$order, hc$order]
+ }
+ cormat = reorder_cormat(cormat)
+ #Obtener triangulo superior
+ get_upper_tri = function(cormat){
+   cormat[lower.tri(cormat)] = NA
+   return(cormat)
+ }
+ upper_tri = get_upper_tri(cormat)
+ #Correlacion como heatmap
+ require(reshape2)
+ melted_cormat = melt(upper_tri, na.rm = T)
+ require(ggplot2)
+ ggheatmap = ggplot(data = melted_cormat, aes(x=Var1, y=Var2, fill = value)) + geom_tile(color = "white") + scale_fill_gradient2(low = "blue",high = "red",mid = "white", midpoint = 0, limit = c(-1,1), space = "Lab", name="Correlacion") + theme_minimal() + theme(axis.text.x = element_text(angle = 90, vjust = 1,hjust = 1)) + coord_fixed()
+ 
+ ggheatmap + 
+ geom_text(aes(Var2, Var1, label = value), color = "black", size = 4) +
+ theme(
+   axis.title.x = element_blank(),
+   axis.title.y = element_blank(),
+   panel.grid.major = element_blank(),
+   panel.border = element_blank(),
+   panel.background = element_blank(),
+   axis.ticks = element_blank(),
+   legend.justification = c(1, 0),
+   legend.position = c(0.6, 0.7),
+   legend.direction = "horizontal")+
+   guides(fill = guide_colorbar(barwidth = 7, barheight = 1,
+                 title.position = "top", title.hjust = 0.5))
+ 
+
+```
+
+Se puede ver que nuestras variables fisicas de los individuos se relacionan bastante bien. Las variables en las cuales no se nota una relacion con cualquier otra son `sex` y `school`. Eliminemoslas y corramos el mismo analisis.
+
+```{r cormatRLM2}
+
+ datos = datos[,c("grade","height","weight","hand_grip","UAC","TST","SSF","age")]
+
+ 
+ #Obtener matriz de correlacion
+ cormat = round(cor(datos,use = "complete.obs"),2)
+ #Reordenar matriz de correlacion
+ reorder_cormat <- function(cormat){
+ # Use correlation between variables as distance
+ dd <- as.dist((1-cormat)/2)
+ hc <- hclust(dd)
+ cormat <-cormat[hc$order, hc$order]
+ }
+ cormat = reorder_cormat(cormat)
+ #Obtener triangulo superior
+ get_upper_tri = function(cormat){
+   cormat[lower.tri(cormat)] = NA
+   return(cormat)
+ }
+ upper_tri = get_upper_tri(cormat)
+ #Correlacion como heatmap
+ require(reshape2)
+ melted_cormat = melt(upper_tri, na.rm = T)
+ require(ggplot2)
+ ggheatmap = ggplot(data = melted_cormat, aes(x=Var1, y=Var2, fill = value)) + geom_tile(color = "white") + scale_fill_gradient2(low = "blue",high = "red",mid = "white", midpoint = 0, limit = c(-1,1), space = "Lab", name="Correlacion") + theme_minimal() + theme(axis.text.x = element_text(angle = 90, vjust = 1,hjust = 1)) + coord_fixed()
+ 
+ ggheatmap + 
+ geom_text(aes(Var2, Var1, label = value), color = "black", size = 4) +
+ theme(
+   axis.title.x = element_blank(),
+   axis.title.y = element_blank(),
+   panel.grid.major = element_blank(),
+   panel.border = element_blank(),
+   panel.background = element_blank(),
+   axis.ticks = element_blank(),
+   legend.justification = c(1, 0),
+   legend.position = c(0.6, 0.7),
+   legend.direction = "horizontal")+
+   guides(fill = guide_colorbar(barwidth = 7, barheight = 1,
+                 title.position = "top", title.hjust = 0.5))
+ 
+
+```
+
+Ahora removeremos las variables independientes que se relaciones entre ellas para evitar la multicolinearidad. Entre `hand_grip` y `height` hay una relacion del 89%. Debido a que la ultura y el peso pueden tomarse como co-variables se removera `height`.  
+Entre `age` y `grade` hay una alta y obvia relacion del 91%, nos quedaremos con `age` ya que tiene una mayor relacion con `weight`.  
+Entre `TST` Y `SSF` existe una relacion del 82%, se escogera a `SSF` para el modelo por su mayor relacion con `weight`.
+
+```{r cormatRLM3}
+
+ datos = datos[,c("weight","hand_grip","UAC","SSF","age")]
+
+ 
+ #Obtener matriz de correlacion
+ cormat = round(cor(datos,use = "complete.obs"),2)
+ #Reordenar matriz de correlacion
+ reorder_cormat <- function(cormat){
+ # Use correlation between variables as distance
+ dd <- as.dist((1-cormat)/2)
+ hc <- hclust(dd)
+ cormat <-cormat[hc$order, hc$order]
+ }
+ cormat = reorder_cormat(cormat)
+ #Obtener triangulo superior
+ get_upper_tri = function(cormat){
+   cormat[lower.tri(cormat)] = NA
+   return(cormat)
+ }
+ upper_tri = get_upper_tri(cormat)
+ #Correlacion como heatmap
+ require(reshape2)
+ melted_cormat = melt(upper_tri, na.rm = T)
+ require(ggplot2)
+ ggheatmap = ggplot(data = melted_cormat, aes(x=Var1, y=Var2, fill = value)) + geom_tile(color = "white") + scale_fill_gradient2(low = "blue",high = "red",mid = "white", midpoint = 0, limit = c(-1,1), space = "Lab", name="Correlacion") + theme_minimal() + theme(axis.text.x = element_text(angle = 90, vjust = 1,hjust = 1)) + coord_fixed()
+ 
+ ggheatmap + 
+ geom_text(aes(Var2, Var1, label = value), color = "black", size = 4) +
+ theme(
+   axis.title.x = element_blank(),
+   axis.title.y = element_blank(),
+   panel.grid.major = element_blank(),
+   panel.border = element_blank(),
+   panel.background = element_blank(),
+   axis.ticks = element_blank(),
+   legend.justification = c(1, 0),
+   legend.position = c(0.6, 0.7),
+   legend.direction = "horizontal")+
+   guides(fill = guide_colorbar(barwidth = 7, barheight = 1,
+                 title.position = "top", title.hjust = 0.5))
+ 
+
+```
+
+
 ### Modelo
 
-### Analisis de Residuos
+Para realizar el modelo, utilizaremos una muestra aleatoria del 70% de los datos para entrenar el modelo y utilizaremos el 30% restante para probarlo.
+
+```{r RLM}
+set.seed(12)
+
+RLMmodel = lm(weight~., data = datos)
+
+summary(RLMmodel)
+```
+
+
+Se puede ver que ahora todas las variables aportan significativamente al modelo. El siguiente paso es realizr un analisis de residuos para validar el modelo.
+
+### Analisis de Residuos{.tabset .tabset-fade}
+
+Para validar el modelo se deben cumplir los supuestos de independencia, normalidad y varianza constante del error.
+
+#### Normalidad del Error
+
+```{r calculoderesiduos}
+par(mfrow=c(1,1))
+plot(RLMmodel, which = 2)
+hist(RLMmodel$residuals, col = 'cyan', xlab = "Histograma de los Residuos")
+```
+
+En el grafico QQ se puede ver que los residuos no siguen la linea del error por lo que el supuesto de la normalidad no se cumple. De la misma manera, en el histograma del error se nota una forma de campana, pero no esta centrada por lo que no se cumple la normalidad.
+
+#### Varianza constante e independencia
+
+```{r varianzaConstante}
+plot(RLMmodel, which = 1)
+```
+En cuanto a la independencia, se puede ver como los residuos se colocan aleatoriamente por arriba y por debajo del 0 comprobando su independencia. Por otro lado, se puede ver que los residuos van creciendo por lo que no existe constancia.
 
 ### Conclusión
+
+* El modelo es preciso en los cuartiles centrales. No se cumplen todos los supuestos por lo que no se puede validar el modelo.
+* Si se remueven los datos atipicos, el modelo podria ser validado.
 
 ## Regrision Logaritmica
 

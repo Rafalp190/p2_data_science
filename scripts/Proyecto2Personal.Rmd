@@ -716,6 +716,8 @@ Se redujo la cantidad de variables y se renombraron para facilidad del analista.
 
 ### Matriz de Correlacion
 
+Antes de realizar un modelo linal multiple, hay que ver como se relacionan las variables entre ellas.
+
 ```{r cormatRLM}
 
  datos = completeData
@@ -859,6 +861,7 @@ Entre `TST` Y `SSF` existe una relacion del 82%, se escogera a `SSF` para el mod
 
 ```
 
+
 ### Modelo
 
 Para realizar el modelo, utilizaremos una muestra aleatoria del 70% de los datos para entrenar el modelo y utilizaremos el 30% restante para probarlo.
@@ -872,9 +875,11 @@ summary(RLMmodel)
 ```
 
 
-SE puede ver que ahora todas las variables aportan significativamente al modelo. El siguiente paso es realizr un analisis de residuos para validar el modelo.
+Se puede ver que ahora todas las variables aportan significativamente al modelo. El siguiente paso es realizr un analisis de residuos para validar el modelo.
 
 ### Analisis de Residuos{.tabset .tabset-fade}
+
+Para validar el modelo se deben cumplir los supuestos de independencia, normalidad y varianza constante del error.
 
 #### Normalidad del Error
 
@@ -884,15 +889,19 @@ plot(RLMmodel, which = 2)
 hist(RLMmodel$residuals, col = 'cyan', xlab = "Histograma de los Residuos")
 ```
 
-
+En el grafico QQ se puede ver que los residuos no siguen la linea del error por lo que el supuesto de la normalidad no se cumple. De la misma manera, en el histograma del error se nota una forma de campana, pero no esta centrada por lo que no se cumple la normalidad.
 
 #### Varianza constante e independencia
 
 ```{r varianzaConstante}
 plot(RLMmodel, which = 1)
 ```
+En cuanto a la independencia, se puede ver como los residuos se colocan aleatoriamente por arriba y por debajo del 0 comprobando su independencia. Por otro lado, se puede ver que los residuos van creciendo por lo que no existe constancia.
 
 ### Conclusión
+
+* El modelo es preciso en los cuartiles centrales. No se cumplen todos los supuestos por lo que no se puede validar el modelo.
+* Si se remueven los datos atipicos, el modelo podria ser validado.
 
 ## Regrision Logaritmica
 
