@@ -73,9 +73,9 @@ library(caret)
 
 ```{r lectura}
 
-subjects = as.data.table(read_xlsx(path = "../data/1-Subjects sex_ID_school_DOB.xlsx"))
-card1 = as.data.table(read_xlsx("../data/4-Card1.xlsx"))
-card2 = as.data.table(read_xlsx("../data/5-Card2.xlsx"))
+subjects = as.data.table(read_xlsx(path = "data/1-Subjects sex_ID_school_DOB.xlsx"))
+card1 = as.data.table(read_xlsx("data/4-Card1.xlsx"))
+card2 = as.data.table(read_xlsx("data/5-Card2.xlsx"))
 
 ```
 
@@ -433,9 +433,9 @@ set.seed(12)
 
 wss <- (nrow(cluster[,c()])-1)*sum(apply(cluster[,1:ncol(cluster)],2,var))
 
-for (i in 2:10) 
+for (i in 2:10) {
   wss[i] <- sum(kmeans(cluster[,1:ncol(cluster)], centers=i)$withinss)
-
+}
 plot(2:
        10, wss[c(2:10)], type="b", xlab="Number of Cluster",  ylab="Squares Summatory", main = "Diagrama de Codo")
 
@@ -505,7 +505,7 @@ En la fuerza de la mano tambien tiene el mismo comportamiento que los anteriores
 ggplot(data = completeData, aes(group = grupo, y = gradeCard1, fill = factor(grupo))) + geom_boxplot(outlier.shape = NA) + xlab("Grupos") + ggtitle("Grado Escolar")
 ```
 
-Nuevamente el patron es notable. La forma del boxplot del primero grupo puede ser devido a que los estudios primarios llegan hasta el numero **16** y los secundarios empiezan en **21**. Podria decirse que aqui se encuntran las personas en estudios basicos. En el segundo grupo estan los grados mas peque?os, podriamos llamarlos el primer ciclo primario. En el tercer grupo estan los del segundo ciclo primario y en el cuarto grupo estan los bachilleres.
+Nuevamente el patron es notable. La forma del boxplot del primero grupo puede ser debido a que los estudios primarios llegan hasta el numero **16** y los secundarios empiezan en **21**. Podria decirse que aqui se encuntran las personas en estudios basicos. En el segundo grupo estan los grados mas peque?os, podriamos llamarlos el primer ciclo primario. En el tercer grupo estan los del segundo ciclo primario y en el cuarto grupo estan los bachilleres.
 
 ### UAC (circunferencia del tricep)
 
@@ -585,7 +585,7 @@ ggplot(g2, aes(group = age, x = age, y = Height)) +
   labs(x = "Edad", y = "Altura (cm)")
 ```
 
-En el grupo 2 estan las personas mas juvenes, se puede ver como cambia drasticamente la altura en los ni?os y se empieza a estabilizar a los 10 a?os.
+En el grupo 2 estan las personas mas jovenes, se puede ver como cambia drasticamente la altura en los ni?os y se empieza a estabilizar a los 10 a?os.
 
 ### Grupo 3
 
@@ -695,7 +695,7 @@ En el grupo 4 estan las personas mas pesadas de todas. desde ni?os hasta adultos
 ## Conclusion de Cluster
 
 * La edad es una medida critica para entrar o no a los grupos.
-* Si eres un niño con peso y altura de un joven, el clustering te agrupar? a ellos y viceversa.
+* Si eres un niño con peso y altura de un joven, el clustering te agrupa a ellos y viceversa.
 * El grupo 1 es el unico grupo con mas mujeres.
 * En el grupo 4 hay hombres en su mayoria.
 * Los pliegues cutaneos varian de distintas maneras dentro de los grupos y no existe una diferencia representante entre el grupo 1 y 4.
@@ -914,6 +914,134 @@ En cuanto a la independencia, se puede ver como los residuos se colocan aleatori
 
 ## Regrision Logaritmica
 
+Debido a que puede que no todas las variables seleccionadas sigan una distribucion normal, comprobaremos cuales de estas son normales utilizando una prueba de Kolmogorov-Smirnov. La hipotesis nula de esta prueba indica que la variable sigue la distribucion indicada (en este caso, la normal).
+
+```{r}
+require(MASS)
+require(car)
+
+ks.test(datos$weight, "pnorm", mean(datos$weight), sd(datos$weight))
+ks.test(datos$hand_grip, "pnorm", mean(datos$hand_grip), sd(datos$hand_grip))
+ks.test(datos$UAC, "pnorm", mean(datos$UAC), sd(datos$UAC))
+ks.test(datos$SSF, "pnorm", mean(datos$SSF), sd(datos$SSF))
+ks.test(datos$age, "pnorm", mean(datos$age), sd(datos$age))
+
+```
+En todos los casos se rechaza la hipotesis nula, por lo que ninguna variable sigue una distribución normal. Con graficas trataremos de determinar algun tipo de distribucion.
+
+```{r}
+par(mfrow=c(1,2))
+
+hist(datos$weight, main="Histograma Peso")
+plot(density(datos$weight), main="Densidad Peso")
+
+hist(datos$hand_grip, main="Histograma Fuerza de agarre")
+plot(density(datos$hand_grip), main="Densidad Fuerza de agarre")
+
+hist(datos$UAC, main="Histograma UAC")
+plot(density(datos$UAC), main="Densidad UAC")
+
+hist(datos$SSF, main="Histograma SSF")
+plot(density(datos$SSF), main="Densidad SSF")
+
+hist(datos$age, main = "Histograma Edad")
+plot(density(datos$age), main = "Densidad Edad")
+
+```
+
+Las variables peso, fuerza de agarre y SSF (pliegues subcutaneos de piel) parecen seguir una distribucion logaritmica, por lo que una transformacion a una distribucion log-normal parece adecuada. La variable UAC parece ser logarítmica, con un grupo de datos atípicos en 0. La edad no parece tener una distribucion clara (¿tal vez uniforme?). Estos datos no tienen sentido, debido a que es imposible tener circunferencia cero del triceps. Se eliminarán estos datos.
+
+```{r}
+datos <- datos %>% 
+  filter(UAC > 0)
+
+hist(datos$UAC, main="Histograma UAC")
+plot(density(datos$UAC), main="Densidad UAC")
+```
+
+Esto tiene mucho mas sentido y parece mas a una ditribucion logaritmica.
+
+Ahora, utilizaremos la prueba de Kolmogorov-Smirnov para determinar si la transformacion de estas variables sigue una distribucion normal. Por pura curiosidad, convertiremos la variable edad tambien.
+
+```{r}
+ks.test(log(datos$weight), mean(log(datos$weight)), sd(log(datos$weight)))
+ks.test(log(datos$hand_grip), mean(log(datos$hand_grip)), sd(log(datos$hand_grip)))
+ks.test(log(datos$UAC), mean(log(datos$UAC)), sd(log(datos$UAC)))
+ks.test(log(datos$SSF), mean(log(datos$SSF)), sd(log(datos$SSF)))
+ks.test(log(datos$age), mean(log(datos$age)), sd(log(datos$age)))
+```
+
+Ninguna prueba rechaza la hipotesis nula, por lo que parece que se logro normalizar los datos al aplicar una tranformacion logaritmica. 
+
+
+```{r}
+hist(datos$weight, main="Histograma log Peso")
+plot(density(datos$weight), main="Densidad log Peso")
+
+hist(log(datos$hand_grip), main="Histograma log Fuerza de agarre")
+plot(density(log(datos$hand_grip)), main="Densidad log Fuerza de agarre")
+
+hist(log(datos$UAC), main="Histograma log UAC")
+plot(density(log(datos$UAC)), main="Densidad log UAC")
+
+hist(log(datos$SSF), main="Histograma log SSF")
+plot(density(log(datos$SSF)), main="Densidad log SSF")
+
+hist(log(datos$age), main = "Histograma log Edad")
+plot(density(log(datos$age)), main = "Densidad log Edad")
+```
+
+Todos las variables, exceptuando la edad parecen haberse normalizado despues de la transformacion. Por lo tanto, aplicaremos la tranformacion logaritmica a todas las variables y probaremos también con la edad debido a que la prueba no rechazo la distribucion. 
+
+Tranformacion de los datos y remocion de valores "infinitos":
+```{r}
+log.datos <- log(datos)
+log.datos <- log.datos[!is.infinite(rowSums(log.datos)),]
+```
+
+
+Muestreo del 70% de los datos para la construccion del modelo y 30% para probar la precision del mismo.
+```{r}
+set.seed(123)
+
+muestra <- sample(nrow(log.datos),nrow(log.datos)*.7)
+
+log.train <- log.datos[muestra,]
+log.test <- log.datos[-muestra,]
+
+```
+
+Construccion del modelo y resumen del mismo:
+
+```{r}
+log.model <- lm(weight~hand_grip + UAC + SSF + age, data = log.train)
+summary(log.model)
+```
+Todas las variables parecen ser altamente significativas para predecir el logaritmo natural del peso. El modelo es significativo (p < 0.00001) y posee un R cuadrado de 0.949.
+
+Comprobacion de los supuestos:
+
+```{r}
+plot(log.model, which = 1)
+```
+Los datos son homocedasticos (la varianza es constante).
+
+```{r}
+vif(log.model)
+```
+El factor de inflacion de varianza de las variables "fuerza de agarre" y "circunferencia del triceps" es mayor a 5, por lo que los datos sufren de multicolinealidad.
+
+```{r}
+plot(log.model, which = 2)
+```
+
+El grafico normal Q-Q sigue la linea recta en el la parte central, pero tiene colas muy marcadas en los extremos, por lo que probablemente existen mas valores extremos que los que se esperarian de una distribucion normal.
+
+Dos de los supuestos de la normalidad de los datos y el modelo no se cumplen. Debido a esto el modelo no es adecuado para predecir estos datos.
+
+
+
+
 ## Red Neuronal
 
 El siguiente modelo que se verificara sera una red neuronal utilizando Caret. Para este se utilizaran todas las variables resultantes del analisis de componenetes principales en donde se reducen variables de ambos lados del cuerpo a una sola.
@@ -954,7 +1082,7 @@ weightR2
 ```
 
 Se creo el modelo en la primera iteración con las variables no normalizadas. Esto produjo un `R-cuadrado de **0.75**`. 
-El siguiente modelo que se probó, se utilizó con las variables normalizadas, como sugieren que se realicen los modelos de predicción de redes neuronales. Este modelo obtuvo muchos mejores resultados que el modelo anterior y como se puede observar se obtuvo un `R-cuadrado de ``r weigthR2`. 
+El siguiente modelo que se probó, se utilizó con las variables normalizadas, como sugieren que se realicen los modelos de predicción de redes neuronales. Este modelo obtuvo muchos mejores resultados que el modelo anterior y como se puede observar se obtuvo un `R-cuadrado de 0.97. 
 
 ### Conclusiones
 
