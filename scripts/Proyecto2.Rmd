@@ -60,6 +60,7 @@ library(ggplot2)
 library(rela)
 library(psych)
 library(FactoMineR)
+library(caret)
 ```
 
 # Conjunto de datos
@@ -710,8 +711,8 @@ Antes de realizar un modelo linal multiple, hay que ver como se relacionan las v
 ```{r cormatRLM}
 
  datos = completeData
- datos$sex = as.factor(datos$sex)
- datos$sex = as.numeric(datos$sex)
+ datos$Sex = as.factor(datos$Sex)
+ datos$Sex = as.numeric(datos$Sex)
 
  
  #Obtener matriz de correlacion
@@ -757,7 +758,26 @@ Antes de realizar un modelo linal multiple, hay que ver como se relacionan las v
 Se puede ver que nuestras variables fisicas de los individuos se relacionan bastante bien. Las variables en las cuales no se nota una relacion con cualquier otra son `sex` y `school`. Eliminemoslas y corramos el mismo analisis.
 
 ```{r cormatRLM2}
-
+ datos$grade <- datos$gradeCard1
+ datos$gradeCard1 <- NULL
+ datos$`grade Card 2` <- NULL
+ datos$height <- datos$Height
+ datos$weight <- datos$Weight
+ datos$Height <- NULL
+ datos$Weight <- NULL
+ datos$hand_grip <- datos$`Hand grip`
+ datos$`Hand grip` <- NULL
+ datos$UAC <- datos$`UAC1 cm`
+ datos$`UAC1 cm` <- NULL
+ datos$`UAC2 cm` <- NULL
+ datos$TST <- datos$`TST1 mm`
+ datos$`TST1 mm` <- NULL
+ datos$`TST2 mm` <- NULL
+ datos$SSF <- datos$`SSF1 mm`
+ datos$`SSF1 mm` <- NULL
+ datos$`SSF2 mm` <- NULL
+ 
+ data_NN <- datos
  datos = datos[,c("grade","height","weight","hand_grip","UAC","TST","SSF","age")]
 
  
@@ -895,3 +915,48 @@ En cuanto a la independencia, se puede ver como los residuos se colocan aleatori
 ## Regrision Logaritmica
 
 ## Red Neuronal
+
+El siguiente modelo que se verificara sera una red neuronal utilizando Caret. Para este se utilizaran todas las variables resultantes del analisis de componenetes principales en donde se reducen variables de ambos lados del cuerpo a una sola.
+
+### Creando los sets de prueba y evaulacion
+
+Primero se crean los sets de datos de prueba y evaluacion haciendo un muestreo aleatorio de la base de datos
+
+```{r}
+porcentaje<-0.7
+
+set.seed(098769)
+
+corte <- sample(nrow(data_NN),nrow(data_NN)*porcentaje)
+data_NN$Id <- NULL
+data_NN$`IdSchool 1` <- NULL
+data_NN$date <- NULL
+data_NN$grupo <- NULL
+data_NN$Sex <- NULL
+data_NN <- scale(data_NN)
+data_NN <- as.data.frame(data_NN)
+train<-data_NN[corte,]
+
+test<-data_NN[-corte,]
+```
+
+### Crear el modelo
+
+```{r}
+modeloCaret <- train(weight~., data=train, method="nnet", trace=F,linout = TRUE)
+
+test$prediccionCaret<-as.numeric(predict(modeloCaret, newdata = test))
+
+rsq <- function (x, y) cor(x, y) ^ 2
+
+weightR2 <- rsq(test$weight, test$prediccionCaret)
+weightR2
+```
+
+Se creo el modelo en la primera iteración con las variables no normalizadas. Esto produjo un `R-cuadrado de **0.75**`. 
+El siguiente modelo que se probó, se utilizó con las variables normalizadas, como sugieren que se realicen los modelos de predicción de redes neuronales. Este modelo obtuvo muchos mejores resultados que el modelo anterior y como se puede observar se obtuvo un `R-cuadrado de ``r weigthR2`. 
+
+### Conclusiones
+
+- El modelo es preciso en un 97% por lo que se puede utilizar correctamente para predicciones. Preferiblemente sin realizar extrapolaciones a grupos etarios mucho mayores ya que se está trabajando con datos de niños, si se quiere hacer predicciones para adultos se requiere información de adultos. 
+- Se recomienda utilizar un modelo de redes neuronales por encima del modelo de regresión lineal ya que este parece tener una mejor precisión y no es necesario validar supuestos, que fue el paso en donde el modelo de regresión lineal falló.
