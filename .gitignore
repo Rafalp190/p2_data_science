@@ -40,4 +40,6 @@ rsconnect/
 # Useless data files
 *.csv
 *.xls
-*.xlsx
+*.xlsx 
+*.png
+*.jpg
